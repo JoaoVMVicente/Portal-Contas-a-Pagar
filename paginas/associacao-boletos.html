@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Associação de Boletos | Portal Serena</title>
+  <link rel="icon" href="../assets/img/simbolo.png" />
+  <!-- ATENÇÃO: como esta página está DENTRO da pasta "paginas/",
+       para chegar no css/ e nos assets/ que estão na raiz do projeto
+       usamos "../" (que significa "suba uma pasta"). -->
+  <link rel="stylesheet" href="../css/fonts.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/servico.css" />
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar (igual à da home) -->
+    <aside class="sidebar">
+      <img class="sidebar__logo" src="../assets/img/logo-serena.png" alt="Serena Energia" />
+      <span class="sidebar__tag">Portal Financeiro<br />Contas a Pagar</span>
+    </aside>
+
+    <main class="main">
+      <div class="container">
+
+        <!-- Botão de voltar para a home -->
+        <a class="voltar" href="../index.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar ao portal
+        </a>
+
+        <!-- Cabeçalho da página do serviço -->
+        <header class="servico-head">
+          <span class="servico-head__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </span>
+          <div>
+            <h1>Associação de Boletos</h1>
+            <p>Solicite a associação de boletos a uma nota fiscal.</p>
+          </div>
+        </header>
+
+        <!-- Área que vai receber a lista vinda da API.
+             Começa mostrando "carregando"; o JS troca esse conteúdo. -->
+        <section class="painel-servico">
+          <div class="painel-servico__head">
+            <h2>Suas solicitações</h2>
+            <button class="btn btn--solid" id="btn-nova">+ Nova solicitação</button>
+          </div>
+
+          <div id="lista">
+            <p class="estado">Carregando solicitações…</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/servico-associacao.js"></script>
+</body>
+</html>

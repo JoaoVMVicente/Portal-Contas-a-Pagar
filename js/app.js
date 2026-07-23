@@ -19,7 +19,7 @@ const ICONS = {
 
 /* ---------- Dados dos serviços (cards) ---------- */
 const SERVICOS = [
-  { id: 'associacao',      icone: 'associacao',      titulo: 'Associação de Boletos',        desc: 'Solicite a associação de boletos a uma nota fiscal.' },
+  { id: 'associacao',      icone: 'associacao',      titulo: 'Associação de Boletos',        desc: 'Solicite a associação de boletos a uma nota fiscal.', pagina: 'paginas/associacao-boletos.html' },
   { id: 'excecao',         icone: 'excecao',         titulo: 'Solicitação de Exceção de Pagamentos', desc: 'Solicite exceções para regras de pagamento.' },
   { id: 'cancelamento',    icone: 'cancelamento',    titulo: 'Cancelamentos de MD',           desc: 'Solicite o cancelamento de pagamentos (MD).' },
   { id: 'estornado',       icone: 'estornado',       titulo: 'Pagamentos Estornados',         desc: 'Acompanhe e solicite informações sobre pagamentos estornados.' },
@@ -89,9 +89,20 @@ function renderComunicado() {
 
 /* ---------- Ações dos botões (pontos de integração) ---------- */
 function abrirServico(id) {
+  // 1) Acha a fichinha do serviço clicado dentro da lista SERVICOS.
   const servico = SERVICOS.find(s => s.id === id);
-  // TODO: navegar para a página / abrir modal do serviço
-  toast(`Abrindo: ${servico.titulo}`);
+
+  // 2) Se essa fichinha tem uma página cadastrada (campo "pagina"),
+  //    mandamos o navegador ir para lá. É como digitar a URL na barra.
+  //    window.location.href = "..."  ->  troca a página atual pela nova.
+  if (servico && servico.pagina) {
+    window.location.href = servico.pagina;
+    return; // encerra a função aqui: já navegou, não precisa do resto
+  }
+
+  // 3) Se a página ainda não foi criada, mostramos só um aviso.
+  //    (À medida que você criar as outras páginas, esse aviso some.)
+  toast(`Página de "${servico.titulo}" ainda não foi criada.`);
 }
 
 function abrirTeams() {
