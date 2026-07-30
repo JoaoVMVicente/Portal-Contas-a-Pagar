@@ -4,11 +4,15 @@
   "description": "Back-end opcional do Portal de Associacao de Boletos da Serena Energia.",
   "type": "module",
   "main": "server.js",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node src/services/boleto-parser.test.mjs"
+    "test": "node src/services/boleto-parser.test.mjs && node src/services/boleto-campos.test.mjs",
+    "test:parser": "node src/services/boleto-parser.test.mjs",
+    "test:campos": "node src/services/boleto-campos.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

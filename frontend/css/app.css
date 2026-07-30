@@ -2152,3 +2152,5 @@ select[aria-invalid='true']:focus {
 .etapa__editar { flex: 0 0 auto; margin-left: 4px; }
 
 .selo-lido--atencao { background: var(--alerta-suave); color: #8a5a12; }
+
+.cartao-empresa__nota--atencao { color: #8a5a12; }

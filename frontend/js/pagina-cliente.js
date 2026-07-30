@@ -25,7 +25,7 @@ import {
   aguardarPausa,
 } from './ui.js';
 import {
-  carregarContas, empresaPorDocumento, contasDaEmpresa, buscarEmpresas,
+  carregarContas, empresaPorDocumento, acharEmpresa, contasDaEmpresa, buscarEmpresas,
   criarVerificadorDeEmpresa, preencherSelectContas, rotuloDaConta,
   formatarDocumento, totais as totaisDeContas,
 } from './contas.js';
@@ -575,9 +575,16 @@ async function preencherComOLido(lido) {
 
   // ---------------------------------------------------------- ETAPA 4
   if (lido.unidadeCnpj) {
-    const empresa = await empresaPorDocumento(lido.unidadeCnpj);
-    if (empresa) {
-      await escolherEmpresa(empresa, { lidaDoBoleto: true });
+    // acharEmpresa também casa pela RAIZ do CNPJ: o boleto costuma vir contra
+    // uma filial (0002, 0003...) enquanto a planilha cadastra a matriz (0001).
+    const achado = await acharEmpresa(lido.unidadeCnpj);
+    if (achado) {
+      await escolherEmpresa(achado.empresa, {
+        lidaDoBoleto: true,
+        porRaiz: achado.porRaiz,
+        filialDoBoleto: achado.filialDoBoleto,
+        cnpjDoBoleto: lido.unidadeCnpj,
+      });
     }
   }
 
@@ -758,7 +765,33 @@ function ligarBuscaDeEmpresa() {
   });
 }
 
-async function escolherEmpresa(empresa, { lidaDoBoleto = false } = {}) {
+/**
+ * O textinho embaixo do nome da empresa, explicando de onde ela veio.
+ *
+ * O caso da filial merece explicação na tela, não só no código: o boleto vem
+ * contra 30.866.542/0002-93 e a planilha cadastra 30.866.542/0001-02. É a
+ * mesma empresa — a raiz do CNPJ é igual, muda a unidade. Como a conta
+ * bancária cadastrada é a da matriz, é ela que vai ser usada, e quem envia
+ * precisa saber disso para conferir se está certo.
+ */
+function notaDaEmpresa({ lidaDoBoleto, porRaiz, filialDoBoleto, cnpjDoBoleto }) {
+  if (!lidaDoBoleto) return '';
+
+  if (porRaiz && filialDoBoleto) {
+    return `<div class="cartao-empresa__nota cartao-empresa__nota--atencao">
+      O boleto foi emitido contra a filial <strong>${escapar(filialDoBoleto)}</strong>
+      (${escapar(fmtCnpj(cnpjDoBoleto))}), e a planilha cadastra esta empresa pela matriz.
+      É a mesma empresa — a raiz do CNPJ é igual. As contas abaixo são as cadastradas.
+    </div>`;
+  }
+
+  return '<div class="cartao-empresa__nota">Este CNPJ estava no boleto e bate com a nossa planilha.</div>';
+}
+
+async function escolherEmpresa(
+  empresa,
+  { lidaDoBoleto = false, porRaiz = false, filialDoBoleto = null, cnpjDoBoleto = null } = {}
+) {
   estado.empresa = empresa;
 
   const contas = await contasDaEmpresa(empresa.documento);
@@ -779,11 +812,7 @@ async function escolherEmpresa(empresa, { lidaDoBoleto = false } = {}) {
           ${empresa.grupo ? ` · grupo ${escapar(empresa.grupo)}` : ''}
           · ${contas.length} conta(s) ativa(s)
         </div>
-        ${
-          lidaDoBoleto
-            ? '<div class="cartao-empresa__nota">Este CNPJ estava no boleto e bate com a nossa planilha.</div>'
-            : ''
-        }
+        ${notaDaEmpresa({ lidaDoBoleto, porRaiz, filialDoBoleto, cnpjDoBoleto })}
       </div>
       <button type="button" class="botao botao--fantasma botao--pequeno" id="trocar-empresa">Trocar</button>
     </div>`;

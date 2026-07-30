@@ -110,6 +110,8 @@ export function acharDocumentosNoTexto(texto) {
         dvValido: false,
         posicao: m.index,
         linha: linhaEmVolta(t, m.index),
+        linhaAnterior: linhaAcima(t, m.index),
+        textoAntes: textoAntesNaLinha(t, m.index),
       });
       continue;
     }
@@ -119,6 +121,8 @@ export function acharDocumentosNoTexto(texto) {
       dvValido: true,
       posicao: m.index,
       linha: linhaEmVolta(t, m.index),
+      linhaAnterior: linhaAcima(t, m.index),
+      textoAntes: textoAntesNaLinha(t, m.index),
     });
   }
 
@@ -134,6 +138,8 @@ export function acharDocumentosNoTexto(texto) {
       dvValido: true,
       posicao: m.index,
       linha: linhaEmVolta(t, m.index),
+      linhaAnterior: linhaAcima(t, m.index),
+      textoAntes: textoAntesNaLinha(t, m.index),
     });
   }
 
@@ -151,6 +157,65 @@ function linhaEmVolta(texto, posicao) {
   return texto.slice(inicio, fim).trim();
 }
 
+/** O trecho da linha que vem ANTES da posição. */
+function textoAntesNaLinha(texto, posicao) {
+  const inicio = texto.lastIndexOf('\n', posicao) + 1;
+  return texto.slice(inicio, posicao).trim();
+}
+
+/** A linha imediatamente acima. É onde os boletos põem os rótulos. */
+function linhaAcima(texto, posicao) {
+  const inicioAtual = texto.lastIndexOf('\n', posicao) + 1;
+  if (inicioAtual <= 1) return '';
+  const inicioAnterior = texto.lastIndexOf('\n', inicioAtual - 2) + 1;
+  return texto.slice(inicioAnterior, inicioAtual - 1).trim();
+}
+
+/* ========================================================================== *
+ * Rótulos: quem é o pagador (nós) e quem é o beneficiário (o fornecedor)
+ * ========================================================================== *
+ * Um boleto tem sempre os dois, e cada banco escreve de um jeito. Esta é a
+ * segunda pista que usamos para separar um do outro — a primeira é conferir
+ * qual CNPJ está na nossa planilha.
+ *
+ * Detalhe do layout que só aparece num boleto real: o rótulo costuma ficar na
+ * LINHA DE CIMA, não na mesma linha do valor. No boleto do Banco do Brasil, a
+ * caixa é assim:
+ *
+ *     Nome do Beneficiário / Endereço      CNPJ         Nosso Número
+ *     TEM TUDO COMERCIAL DE MATERIAL...    27.591...    00003286977...
+ *
+ * Por isso olhamos a linha atual E a de cima.
+ */
+const ROTULOS_DE_BENEFICIARIO = [
+  'BENEFICIARIO', 'CEDENTE', 'FAVORECIDO', 'CREDOR', 'EMITENTE',
+];
+
+const ROTULOS_DE_PAGADOR = [
+  'PAGADOR', 'SACADO', 'DEVEDOR', 'CLIENTE', 'TOMADOR',
+];
+
+/**
+ * Diz se um documento aparece sob rótulo de beneficiário ou de pagador.
+ * @returns {'beneficiario'|'pagador'|null}
+ */
+function classificarPeloRotulo(doc) {
+  const contexto = semAcento(`${doc.linhaAnterior} ${doc.linha}`);
+
+  // "Beneficiário Final" é outra coisa: é um campo que quase sempre vem vazio,
+  // e confundir com o beneficiário de verdade daria o nome errado.
+  const temBeneficiario = ROTULOS_DE_BENEFICIARIO.some(
+    (r) => contexto.includes(r) && !contexto.includes(`${r} FINAL`)
+  );
+  const temPagador = ROTULOS_DE_PAGADOR.some((r) => contexto.includes(r));
+
+  // Os dois na mesma vizinhança não decide nada.
+  if (temBeneficiario && temPagador) return null;
+  if (temBeneficiario) return 'beneficiario';
+  if (temPagador) return 'pagador';
+  return null;
+}
+
 /* ========================================================================== *
  * 2. Separar "nossa empresa" de "fornecedor"
  * ========================================================================== */
@@ -162,39 +227,95 @@ function linhaEmVolta(texto, posicao) {
  */
 export function separarEmpresaEFornecedor(texto, ehNossaEmpresa) {
   const documentos = acharDocumentosNoTexto(texto);
-
-  const nossos = documentos.filter((d) => d.tipo === 'cnpj' && ehNossaEmpresa(d.digitos));
-  const outros = documentos.filter((d) => !nossos.includes(d));
-
+  const suspeitos = documentos.suspeitos ?? [];
   const avisos = [];
 
-  if (nossos.length > 1) {
+  // Marcamos cada documento com as duas pistas que temos.
+  const marcar = (d) => ({
+    ...d,
+    nosso: d.tipo === 'cnpj' && ehNossaEmpresa(d.digitos),
+    rotulo: classificarPeloRotulo(d),
+  });
+
+  const todos = documentos.map(marcar);
+  const todosSuspeitos = suspeitos.map(marcar);
+
+  /* ------------------------------------------------------------------ *
+   * A NOSSA EMPRESA (o pagador)
+   * ------------------------------------------------------------------ *
+   * Ordem de confiança:
+   *   1. está na planilha (considerando a raiz do CNPJ)  -> certeza
+   *   2. aparece sob rótulo de pagador                   -> boa pista
+   * ------------------------------------------------------------------ */
+  const naPlanilha = todos.filter((d) => d.nosso);
+  const sobRotuloDePagador = todos.filter((d) => !d.nosso && d.rotulo === 'pagador');
+
+  let unidade = naPlanilha[0] ?? null;
+
+  if (!unidade && sobRotuloDePagador.length) {
+    unidade = sobRotuloDePagador[0];
     avisos.push(
-      `Achei ${nossos.length} CNPJs do grupo neste boleto. Escolhi o primeiro — confira a empresa.`
+      'O CNPJ que aparece como pagador não está na planilha de empresas. ' +
+        'Confira a unidade de negócio antes de enviar.'
     );
   }
-  if (nossos.length === 0 && documentos.length > 0) {
-    avisos.push('Nenhum dos CNPJs do boleto está na planilha de empresas. Escolha a empresa à mão.');
-  }
-  if (outros.length > 1) {
-    avisos.push(`Achei ${outros.length} CNPJs de fora do grupo. Confira o fornecedor.`);
+
+  if (naPlanilha.length > 1) {
+    const distintos = new Set(naPlanilha.map((d) => d.digitos));
+    if (distintos.size > 1) {
+      avisos.push(
+        `Achei ${distintos.size} CNPJs do grupo neste boleto. Escolhi o primeiro — confira a empresa.`
+      );
+    }
   }
 
-  // Último recurso: nenhum CNPJ de fornecedor passou na verificação, mas havia
-  // algo com cara de CNPJ. Entregamos, avisando bem alto.
-  let fornecedor = outros[0] ?? null;
-  const suspeitos = (documentos.suspeitos ?? []).filter((d) => !ehNossaEmpresa(d.digitos));
+  /* ------------------------------------------------------------------ *
+   * O FORNECEDOR (o beneficiário)
+   * ------------------------------------------------------------------ *
+   * Ordem de confiança:
+   *   1. aparece sob rótulo de beneficiário E não é do grupo  -> certeza
+   *   2. não é do grupo, sem rótulo                           -> palpite
+   *   3. tem cara de CNPJ mas o dígito não fecha              -> último recurso
+   *
+   * O passo 1 é o que consertou o boleto do Banco do Brasil: sem ele, quando
+   * a nossa empresa não era reconhecida, ela virava "o primeiro de fora" e ia
+   * para o campo do fornecedor.
+   * ------------------------------------------------------------------ */
+  const idUnidade = unidade?.digitos;
+  const deFora = todos.filter((d) => !d.nosso && d.digitos !== idUnidade);
 
-  if (!fornecedor && suspeitos.length) {
-    fornecedor = suspeitos[0];
-    avisos.push(
-      'O CNPJ do fornecedor não passou na verificação do dígito — provavelmente um número ' +
-        'foi lido errado. Confira dígito por dígito antes de enviar.'
+  let fornecedor =
+    deFora.find((d) => d.rotulo === 'beneficiario') ??
+    deFora.find((d) => d.rotulo !== 'pagador') ??
+    null;
+
+  if (!fornecedor) {
+    const suspeitosDeFora = todosSuspeitos.filter(
+      (d) => !d.nosso && d.digitos !== idUnidade && d.rotulo !== 'pagador'
     );
+    if (suspeitosDeFora.length) {
+      fornecedor = suspeitosDeFora.find((d) => d.rotulo === 'beneficiario') ?? suspeitosDeFora[0];
+      avisos.push(
+        'O CNPJ do fornecedor não passou na verificação do dígito — provavelmente um número ' +
+          'foi lido errado. Confira dígito por dígito antes de enviar.'
+      );
+    }
+  }
+
+  const candidatosAFornecedor = new Set(deFora.map((d) => d.digitos));
+  if (candidatosAFornecedor.size > 1 && fornecedor?.rotulo !== 'beneficiario') {
+    avisos.push(
+      `Achei ${candidatosAFornecedor.size} CNPJs de fora do grupo e nenhum sob rótulo de ` +
+        'beneficiário. Confira o fornecedor.'
+    );
+  }
+
+  if (!unidade && !naPlanilha.length && todos.length) {
+    avisos.push('Nenhum CNPJ do boleto bate com a planilha de empresas. Escolha a empresa à mão.');
   }
 
   return {
-    unidade: nossos[0] ?? null,
+    unidade,
     fornecedor,
     todos: documentos,
     suspeitos,
@@ -215,68 +336,117 @@ export function separarEmpresaEFornecedor(texto, ehNossaEmpresa) {
  * ele está na lista de coisas a IGNORAR.
  */
 const ROTULOS_IGNORAR = [
-  'NOSSO NUMERO',
-  'NOSSO NUM',
-  'NUMERO DO BANCO',
-  'CARTEIRA',
-  'AGENCIA',
-  'CODIGO DE BARRAS',
-  'LINHA DIGITAVEL',
-  'CPF',
-  'CNPJ',
-  'CEP',
-  'USO DO BANCO',
-  'NUMERO DE REQUISICAO',
-  'REQUISICAO',
-];
-
-const PADROES_NUMERO = [
-  // Mais confiável: o rótulo diz explicitamente nota fiscal ou medição.
-  { peso: 100, re: /\b(?:NOTA\s+FISCAL|NF-?E?|NFS-?E?)\s*(?:N[º°O.]?\s*|NUMERO\s*|:\s*)?([0-9][0-9./-]{2,19})/g, tipo: 'NF' },
-  { peso: 100, re: /\b(?:MEDICAO|MEDICOES|MD)\s*(?:N[º°O.]?\s*|NUMERO\s*|:\s*)?([0-9][0-9./-]{2,19})/g, tipo: 'MD' },
-  // Rótulo padrão da ficha de compensação.
-  { peso: 80, re: /\bN[º°O.]?\s*(?:DO\s+)?DOCUMENTO\s*[:\-]?\s*([0-9][0-9./-]{2,19})/g, tipo: null },
-  { peso: 80, re: /\bNUMERO\s+DO\s+DOCUMENTO\s*[:\-]?\s*([0-9][0-9./-]{2,19})/g, tipo: null },
-  { peso: 70, re: /\bDOCUMENTO\s*[:\-]\s*([0-9][0-9./-]{2,19})/g, tipo: null },
-  // Aparece no campo de demonstrativo/instruções: "REF NF 8821".
-  { peso: 60, re: /\bREF(?:ERENTE|\.)?\s*(?:A\s*)?(?:NF|NOTA)\s*[:\-]?\s*([0-9][0-9./-]{2,19})/g, tipo: 'NF' },
-  { peso: 40, re: /\bFATURA\s*(?:N[º°O.]?\s*)?[:\-]?\s*([0-9][0-9./-]{2,19})/g, tipo: null },
+  'NOSSO NUMERO', 'NOSSO NUM', 'NUMERO DO BANCO', 'CARTEIRA', 'AGENCIA',
+  'CODIGO DE BARRAS', 'LINHA DIGITAVEL', 'CEP', 'USO DO BANCO',
+  'NUMERO DE REQUISICAO', 'REQUISICAO', 'CODIGO DO BENEFICIARIO',
 ];
 
 /**
+ * As formas de escrever "número". Cada banco escolhe uma:
+ *   Nº  N°  No  N.  Nr  Nr.  Num  Num.  Numero
+ * Faltar uma delas é o suficiente para não achar o campo — foi o que
+ * aconteceu com o boleto do Banco do Brasil, que escreve "Nr. do Documento".
+ */
+const N_DE_NUMERO = '(?:N[º°O]?\\.?|NR\\.?|NUM\\.?|NUMERO)';
+
+const PADROES_NUMERO = [
+  // Mais confiável: o rótulo diz explicitamente nota fiscal ou medição.
+  { peso: 100, re: new RegExp(`\\b(?:NOTA\\s+FISCAL|NF-?E?|NFS-?E?)\\s*(?:${N_DE_NUMERO}\\s*|:\\s*)?([0-9][0-9./-]{2,19})`, 'g'), tipo: 'NF' },
+  { peso: 100, re: new RegExp(`\\b(?:MEDICAO|MEDICOES)\\s*(?:${N_DE_NUMERO}\\s*|:\\s*)?([0-9][0-9./-]{2,19})`, 'g'), tipo: 'MD' },
+  // Rótulo padrão da ficha de compensação.
+  { peso: 80, re: new RegExp(`\\b${N_DE_NUMERO}\\s*(?:DO\\s+)?DOCUMENTO\\s*[:\\-]?\\s*([0-9][0-9./-]{2,19})`, 'g'), tipo: null },
+  { peso: 70, re: /\bDOCUMENTO\s*[:\-]\s*([0-9][0-9./-]{2,19})/g, tipo: null },
+  // Campo de demonstrativo: "REF NF 8821".
+  { peso: 60, re: /\bREF(?:ERENTE|\.)?\s*(?:A\s*)?(?:NF|NOTA)\s*[:\-]?\s*([0-9][0-9./-]{2,19})/g, tipo: 'NF' },
+  { peso: 40, re: new RegExp(`\\bFATURA\\s*(?:${N_DE_NUMERO}\\s*)?[:\\-]?\\s*([0-9][0-9./-]{2,19})`, 'g'), tipo: null },
+];
+
+/** Rótulos que, quando aparecem sozinhos, mandam olhar a linha de baixo. */
+const RE_ROTULO_SOZINHO = new RegExp(`\\b${N_DE_NUMERO}\\s*(?:DO\\s+)?DOCUMENTO\\b`);
+
+const RE_DATA = /^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/;
+const RE_DINHEIRO = /^\d{1,3}(\.\d{3})*,\d{2}$/;
+
+/** Um candidato a número de documento precisa passar por aqui. */
+function numeroPlausivel(bruto) {
+  const limpo = String(bruto).replace(/[^0-9]/g, '');
+  if (!limpo || limpo.length < 2 || limpo.length > 15) return null;
+  if (/^0+$/.test(limpo)) return null;
+  // 14 dígitos válidos é CNPJ; 11 pode ser CPF. Nenhum dos dois é nota.
+  if (limpo.length === 14 && cnpjValido(limpo)) return null;
+  if (limpo.length === 11 && cpfValido(limpo)) return null;
+  return limpo.replace(/^0+(?=\d)/, '');
+}
+
+/**
  * Devolve os candidatos a número do documento, do mais provável ao menos.
- * @returns {{numero:string, tipoSugerido:'NF'|'MD'|null, peso:number, contexto:string}[]}
+ *
+ * DUAS ARMADILHAS TRATADAS AQUI, as duas descobertas num boleto real:
+ *
+ * 1. "Nosso número" NÃO é o número da nota. É o identificador que o banco dá
+ *    ao boleto. Confundir os dois é o erro clássico, então ele está na lista
+ *    de rótulos a ignorar.
+ *
+ * 2. O valor quase nunca está na mesma linha do rótulo. No layout do Banco do
+ *    Brasil, os rótulos ficam numa faixa e os valores na faixa de baixo:
+ *
+ *        Uso do Banco   Nr. do Documento   Espécie Doc.   Aceite
+ *                       44597              DM             N
+ *
+ *    Então, quando achamos o rótulo sem valor ao lado, olhamos a linha
+ *    seguinte e pegamos o primeiro número que não seja data, dinheiro,
+ *    CNPJ nem "nosso número" (que é longo).
  */
 export function acharNumerosDeDocumento(texto) {
   const t = semAcento(texto).replace(/\u00a0/g, ' ');
+  const linhas = t.split('\n');
   const candidatos = [];
 
+  // ---- padrões com rótulo e valor na mesma linha ----
   for (const padrao of PADROES_NUMERO) {
     padrao.re.lastIndex = 0;
     let m;
     while ((m = padrao.re.exec(t)) !== null) {
-      const cru = m[1];
       const contexto = linhaEmVolta(t, m.index);
-
-      // Se a linha fala de algo que não queremos, descartamos.
       if (ROTULOS_IGNORAR.some((r) => contexto.includes(r) && !contexto.includes('NOTA'))) continue;
 
-      const limpo = cru.replace(/[^0-9]/g, '');
-      if (!limpo || limpo.length < 2 || limpo.length > 15) continue;
-
-      // Um número de 14 dígitos é CNPJ, não nota. De 11, pode ser CPF.
-      if (limpo.length === 14 && cnpjValido(limpo)) continue;
-      if (limpo.length === 11 && cpfValido(limpo)) continue;
-
-      // Só zeros não serve.
-      if (/^0+$/.test(limpo)) continue;
+      const numero = numeroPlausivel(m[1]);
+      if (!numero) continue;
 
       candidatos.push({
-        numero: limpo.replace(/^0+(?=\d)/, ''), // tira zeros à esquerda
+        numero,
         tipoSugerido: padrao.tipo,
         peso: padrao.peso,
         contexto: contexto.slice(0, 90),
       });
+    }
+  }
+
+  // ---- rótulo numa linha, valor na linha de baixo ----
+  for (let i = 0; i < linhas.length - 1; i += 1) {
+    const linha = linhas[i];
+    if (!RE_ROTULO_SOZINHO.test(linha)) continue;
+
+    // Se o próprio rótulo já veio com número, os padrões acima resolveram.
+    const depoisDoRotulo = linha.slice(linha.search(RE_ROTULO_SOZINHO));
+    if (/\d/.test(depoisDoRotulo.replace(RE_ROTULO_SOZINHO, ''))) continue;
+
+    for (const pedaco of linhas[i + 1].trim().split(/\s+/)) {
+      if (RE_DATA.test(pedaco) || RE_DINHEIRO.test(pedaco)) continue;
+      if (!/^[0-9][0-9./-]*$/.test(pedaco)) continue;
+
+      const numero = numeroPlausivel(pedaco);
+      if (!numero) continue;
+      // "Nosso número" costuma ter 11 dígitos ou mais nessa posição.
+      if (numero.length > 10) continue;
+
+      candidatos.push({
+        numero,
+        tipoSugerido: null,
+        peso: 85,
+        contexto: `${linha.slice(0, 45)} -> ${linhas[i + 1].slice(0, 40)}`,
+      });
+      break; // o primeiro plausível da linha é o da coluna certa
     }
   }
 
@@ -293,80 +463,128 @@ export function acharNumerosDeDocumento(texto) {
 /* ========================================================================== *
  * 4. A razão social do fornecedor
  * ========================================================================== */
-const ROTULOS_BENEFICIARIO = [
-  'BENEFICIARIO',
-  'CEDENTE',
-  'FAVORECIDO',
-  'NOME DO BENEFICIARIO',
-  'BENEFICIARIO FINAL',
-];
-
-const SUFIXOS_EMPRESA = /\b(S\.?\s?A\.?|LTDA|ME|EIRELI|EPP|MEI|S\/A|SOCIEDADE|COMERCIO|SERVICOS|ENGENHARIA|CONSTRUTORA|TRANSPORTES|INDUSTRIA)\b/;
+const SUFIXOS_EMPRESA =
+  /\b(S\.?\s?A\.?|LTDA|ME|EIRELI|EPP|MEI|S\/A|SOCIEDADE|COMERCIO|COMERCIAL|SERVICOS|ENGENHARIA|CONSTRUTORA|TRANSPORTES|INDUSTRIA|MATERIAL|MATERIAIS|DISTRIBUIDORA)\b/;
 
 /**
- * Tenta achar o nome do fornecedor.
+ * Acha a razão social do fornecedor.
  *
- * Duas estratégias, na ordem:
- *   1. Uma linha que começa com "Beneficiário" e tem um nome depois.
- *   2. A linha onde o CNPJ do fornecedor apareceu — o nome quase sempre está
- *      ao lado dele. Tiramos o CNPJ e a pontuação e vemos o que sobra.
+ * A ESTRATÉGIA PRINCIPAL, e por que ela é boa
+ * -------------------------------------------
+ * O nome vem SEMPRE antes do CNPJ, na mesma linha. Olhe o boleto do Banco do
+ * Brasil:
+ *
+ *     TEM TUDO COMERCIAL DE MATERIAL DE CONSTR   27.591.360/0001-61   00003286...
+ *     └──────────── o nome está aqui ─────────┘  └── o CNPJ ───────┘  └ resto ┘
+ *
+ * Então basta cortar a linha na posição do CNPJ e ficar com o lado esquerdo.
+ *
+ * A primeira versão pegava a linha inteira e tentava limpar o que não era
+ * nome. Isso trouxe lixo: no campo do pagador, a linha é
+ *
+ *     DELTA 7 1 ENERGIA S.A   30.866.542/0002-93   03/08/2026
+ *
+ * e a data de vencimento — que fica na mesma faixa, numa caixa ao lado —
+ * entrava no nome, virando "DELTA 7 1 ENERGIA S.A 03/08/". Cortando no CNPJ,
+ * tudo que vem depois é descartado de graça.
  */
-export function acharRazaoSocialFornecedor(texto, cnpjFornecedorDigitos = null) {
+export function acharRazaoSocialFornecedor(texto, documentoFornecedor = null) {
+  // Estratégia 1: o texto imediatamente antes do CNPJ, na mesma linha.
+  if (documentoFornecedor?.textoAntes) {
+    const nome = limparNome(documentoFornecedor.textoAntes);
+    if (nome.length >= 4) {
+      return { nome, confianca: 'media', origem: 'antes-do-cnpj' };
+    }
+  }
+
   const linhas = String(texto ?? '')
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean);
 
-  // Estratégia 1: pelo rótulo.
-  for (const linha of linhas) {
-    const normal = semAcento(linha);
-    const rotulo = ROTULOS_BENEFICIARIO.find((r) => normal.startsWith(r));
-    if (!rotulo) continue;
+  // Estratégia 2: rótulo de beneficiário, com o valor na linha de baixo.
+  for (let i = 0; i < linhas.length; i += 1) {
+    const normal = semAcento(linhas[i]);
+    const temRotulo = ROTULOS_DE_BENEFICIARIO.some(
+      (r) => normal.includes(r) && !normal.includes(`${r} FINAL`)
+    );
+    if (!temRotulo) continue;
 
-    let resto = linha.slice(rotulo.length).replace(/^[\s:.\-–]+/, '');
-    resto = limparNome(resto);
-    if (resto.length >= 4) {
-      return { nome: resto, confianca: 'media', origem: `rotulo:${rotulo.toLowerCase()}` };
+    // Primeiro tenta o resto da própria linha, depois a linha seguinte.
+    const posicao = normal.search(/BENEFICIARIO|CEDENTE|FAVORECIDO|CREDOR|EMITENTE/);
+    const restoDaLinha = limparNome(linhas[i].slice(posicao).replace(/^\S+/, ''));
+    if (restoDaLinha.length >= 6 && SUFIXOS_EMPRESA.test(semAcento(restoDaLinha))) {
+      return { nome: restoDaLinha, confianca: 'media', origem: 'rotulo-mesma-linha' };
+    }
+
+    const abaixo = limparNome(linhas[i + 1] ?? '');
+    if (abaixo.length >= 4) {
+      return { nome: abaixo, confianca: 'media', origem: 'rotulo-linha-de-baixo' };
     }
   }
 
-  // Estratégia 2: pela linha do CNPJ do fornecedor.
-  if (cnpjFornecedorDigitos) {
-    const alvo = somenteDigitos(cnpjFornecedorDigitos);
-    for (const linha of linhas) {
-      if (somenteDigitos(linha).includes(alvo)) {
-        const nome = limparNome(linha);
-        if (nome.length >= 4) {
-          return { nome, confianca: 'baixa', origem: 'linha-do-cnpj' };
-        }
-      }
-    }
-  }
-
-  // Estratégia 3: qualquer linha que pareça razão social de empresa.
+  // Estratégia 3: qualquer linha com cara de razão social.
   for (const linha of linhas.slice(0, 30)) {
-    if (SUFIXOS_EMPRESA.test(semAcento(linha))) {
-      const nome = limparNome(linha);
-      if (nome.length >= 6 && nome.length <= 70) {
-        return { nome, confianca: 'baixa', origem: 'formato-de-razao-social' };
-      }
+    if (!SUFIXOS_EMPRESA.test(semAcento(linha))) continue;
+    const nome = limparNome(linha);
+    if (nome.length >= 6 && nome.length <= 70) {
+      return { nome, confianca: 'baixa', origem: 'formato-de-razao-social' };
     }
   }
 
   return { nome: null, confianca: 'baixa', origem: 'nao-encontrado' };
 }
 
-/** Tira do texto tudo que claramente não faz parte de um nome de empresa. */
+/**
+ * Palavras de rótulo que aparecem grudadas no nome e precisam sair.
+ *
+ * A comparação é feita SEM ACENTO, porque cada banco escreve de um jeito:
+ * "Beneficiário", "BENEFICIARIO", "Beneficiario". Guardar as três formas na
+ * lista seria fácil de esquecer — normalizar na comparação não é.
+ *
+ * O nome de saída mantém os acentos: "Construções Silva" precisa continuar
+ * "Construções Silva".
+ */
+const PALAVRAS_DE_ROTULO = new Set([
+  'CNPJ', 'CPF', 'AGENCIA', 'CODIGO', 'COD', 'ENDERECO', 'NOME', 'NOSSO',
+  'NUMERO', 'NUM', 'NR', 'VENCIMENTO', 'DATA', 'BENEFICIARIO', 'BENEFICIARIA',
+  'CEDENTE', 'FAVORECIDO', 'CREDOR', 'EMITENTE', 'PAGADOR', 'SACADO',
+  'DEVEDOR', 'TOMADOR', 'CEP', 'DOCUMENTO', 'VALOR', 'ESPECIE', 'ACEITE',
+  'CARTEIRA', 'PROCESSAMENTO', 'LOCAL', 'PAGAMENTO',
+]);
+
+/**
+ * Tira do texto tudo que claramente não faz parte de um nome de empresa:
+ * documentos, datas, CEP, números longos e as palavras de rótulo.
+ *
+ * A ordem importa. Primeiro saem os padrões (CNPJ, datas), depois as palavras,
+ * depois a pontuação que sobrou nas beiradas.
+ */
 function limparNome(texto) {
-  return String(texto ?? '')
-    .replace(/\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}/g, ' ') // CNPJ
-    .replace(/\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}/g, ' ')            // CPF
-    .replace(/\b(CNPJ|CPF|CNPJ\/CPF|AGENCIA|CODIGO|COD)\b\.?:?/gi, ' ')
-    .replace(/\d{4,}/g, ' ')                                            // números longos
-    .replace(/[|;]+/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/^[\s.\-–:]+|[\s.\-–:]+$/g, '')
-    .trim();
+  const semPadroes = String(texto ?? '')
+    // documentos
+    .replace(/\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}/g, ' ')
+    .replace(/\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}/g, ' ')
+    // datas em qualquer forma, inclusive incompletas ("03/08/")
+    .replace(/\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b/g, ' ')
+    .replace(/\b\d{1,2}[/.-]\d{1,2}[/.-]?/g, ' ')
+    // CEP
+    .replace(/\bCEP[:\s]*\d{5}-?\d{3}\b/gi, ' ')
+    // números longos (nosso número, código de barras, agência/conta)
+    .replace(/\d{4,}/g, ' ')
+    .replace(/[|;()]+/g, ' ');
+
+  // Agora as palavras, comparando sem acento e sem pontuação.
+  const limpo = semPadroes
+    .split(/\s+/)
+    .filter((palavra) => {
+      const chave = semAcento(palavra).replace(/[^A-Z0-9]/g, '');
+      if (!chave) return false;
+      return !PALAVRAS_DE_ROTULO.has(chave);
+    })
+    .join(' ');
+
+  return limpo.replace(/^[\s./\-–:]+|[\s./\-–:]+$/g, '').trim();
 }
 
 /* ========================================================================== *
@@ -379,7 +597,7 @@ function limparNome(texto) {
 export function extrairCamposDoTexto(texto, { ehNossaEmpresa = () => false, tipoDocumento = null } = {}) {
   const documentos = separarEmpresaEFornecedor(texto, ehNossaEmpresa);
   const numeros = acharNumerosDeDocumento(texto);
-  const fornecedor = acharRazaoSocialFornecedor(texto, documentos.fornecedor?.digitos ?? null);
+  const fornecedor = acharRazaoSocialFornecedor(texto, documentos.fornecedor ?? null);
 
   // Se sabemos que é NF, um candidato marcado como NF vale mais.
   const numerosOrdenados = tipoDocumento
@@ -393,6 +611,7 @@ export function extrairCamposDoTexto(texto, { ehNossaEmpresa = () => false, tipo
 
   return {
     unidadeCnpj: documentos.unidade?.digitos ?? null,
+    unidadeConferida: documentos.unidade?.nosso ?? false,
     fornecedorCnpj: documentos.fornecedor?.digitos ?? null,
     fornecedorCnpjConferido: documentos.fornecedor?.dvValido ?? false,
     fornecedorTipoDocumento: documentos.fornecedor?.tipo ?? null,

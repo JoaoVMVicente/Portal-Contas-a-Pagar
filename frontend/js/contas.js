@@ -44,6 +44,39 @@ export async function carregarContas() {
     // Índice por documento, para achar empresa em tempo constante.
     dados.porDocumento = new Map(dados.empresas.map((e) => [e.documento, e]));
 
+    // ---------------------------------------------------------------------
+    // Índice por RAIZ do CNPJ (os 8 primeiros dígitos).
+    // ---------------------------------------------------------------------
+    // Isto conserta um problema que só apareceu com um boleto real. Um CNPJ
+    // tem três partes:
+    //
+    //     30.866.542 / 0002 - 93
+    //     └── raiz ──┘  └filial┘ └DV┘
+    //
+    // A raiz identifica a EMPRESA. A filial identifica a UNIDADE dela.
+    //
+    // A planilha cadastra quase tudo como matriz (0001), mas o fornecedor
+    // emite o boleto contra a filial que recebeu o material — 0002, 0003...
+    // Comparando os 14 dígitos, a mesma empresa parecia ser outra, e o
+    // sistema concluía que não era do grupo.
+    //
+    // Casar por raiz resolve. E é seguro: conferi que, nesta planilha, cada
+    // raiz aponta para uma empresa só (a única raiz repetida tem a mesma
+    // razão social duas vezes, ou seja, é a mesma empresa mesmo).
+    // ---------------------------------------------------------------------
+    dados.porRaiz = new Map();
+    for (const e of dados.empresas) {
+      if (e.documentoTipo !== 'cnpj' || e.documento.length !== 14) continue;
+      const raiz = e.documento.slice(0, 8);
+      if (!dados.porRaiz.has(raiz)) dados.porRaiz.set(raiz, []);
+      dados.porRaiz.get(raiz).push(e);
+    }
+    // Dentro de cada raiz, a matriz (0001) vem primeiro: é a que a planilha
+    // cadastra e a que faz mais sentido oferecer.
+    for (const lista of dados.porRaiz.values()) {
+      lista.sort((a, b) => a.documento.slice(8, 12).localeCompare(b.documento.slice(8, 12)));
+    }
+
     // Se o arquivo vier sem os índices prontos, reconstruímos.
     if (!dados.indices?.porConta) {
       const porConta = {};
@@ -59,6 +92,8 @@ export async function carregarContas() {
       }
       dados.indices = { porConta, porChaveBusca };
     }
+
+    if (!dados.porRaiz) dados.porRaiz = new Map();
 
     pacote = dados;
     return dados;
@@ -116,16 +151,56 @@ export async function listarEmpresas() {
   return p.empresas;
 }
 
-/** A empresa de um CNPJ. Aceita com ou sem pontuação. */
+/**
+ * A empresa de um CNPJ. Aceita com ou sem pontuação.
+ *
+ * Tenta primeiro o CNPJ inteiro. Se não achar, tenta pela RAIZ — porque o
+ * boleto costuma vir contra uma filial que não está cadastrada, e a matriz
+ * está. Ver o comentário do índice porRaiz, acima.
+ */
 export async function empresaPorDocumento(documento) {
-  const p = await carregarContas();
-  return p.porDocumento.get(digitos(documento)) ?? null;
+  const achado = await acharEmpresa(documento);
+  return achado?.empresa ?? null;
 }
 
-/** Esta é a função que o boleto-campos.js usa para separar nós de eles. */
+/**
+ * Como empresaPorDocumento, mas dizendo COMO achou. A tela usa isso para
+ * avisar que o boleto é de uma filial e a conta cadastrada é da matriz.
+ *
+ * @returns {{empresa:object, porRaiz:boolean, filialDoBoleto:string|null}|null}
+ */
+export async function acharEmpresa(documento) {
+  const p = await carregarContas();
+  const d = digitos(documento);
+
+  const exata = p.porDocumento.get(d);
+  if (exata) return { empresa: exata, porRaiz: false, filialDoBoleto: null };
+
+  if (d.length === 14) {
+    const mesmaRaiz = p.porRaiz.get(d.slice(0, 8));
+    if (mesmaRaiz?.length) {
+      return {
+        empresa: mesmaRaiz[0],
+        porRaiz: true,
+        filialDoBoleto: d.slice(8, 12),
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Esta é a função que o boleto-campos.js usa para separar nós de eles.
+ * Responde "este documento é de uma empresa do grupo?" — considerando a raiz.
+ */
 export async function criarVerificadorDeEmpresa() {
   const p = await carregarContas();
-  return (documento) => p.porDocumento.has(digitos(documento));
+  return (documento) => {
+    const d = digitos(documento);
+    if (p.porDocumento.has(d)) return true;
+    if (d.length === 14 && p.porRaiz.has(d.slice(0, 8))) return true;
+    return false;
+  };
 }
 
 /** As contas ativas de uma empresa. */
