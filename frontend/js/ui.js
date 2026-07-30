@@ -64,7 +64,8 @@ export function moeda(valor) {
 /** Para os cartões do topo: R$ 21.090 em vez de R$ 21.090,00 */
 export function moedaCurta(valor) {
   const n = Number(valor ?? 0);
-  return Number.isFinite(n) ? fmtMoedaCurta.format(n) : 'R$ 0';
+  if (!Number.isFinite(n)) return 'R$ 0';
+  return Math.abs(n) < 10000 ? moeda(n) : fmtMoedaCurta.format(n);
 }
 
 export function numero(valor) {
