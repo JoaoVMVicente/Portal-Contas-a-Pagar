@@ -35,6 +35,7 @@ export const ICONES = {
   atualizar: T('<path d="M21 12a9 9 0 11-3.2-6.9"/><path d="M21 3v5h-5"/>'),
   planilha: T('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>'),
   raio: T('<path d="M13 2L4.5 13.5H11l-1 8.5L19 10h-6.5z"/>'),
+  automacao: T('<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 8.5l6 3.5-6 3.5z"/>'),
   cadeado: T('<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/>'),
   email: T('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2.5 6.5l9.5 7 9.5-7"/>'),
   desfazer: T('<path d="M3 8h11a5 5 0 010 10H9"/><path d="M7 4L3 8l4 4"/>'),

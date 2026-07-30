@@ -26,7 +26,7 @@ const SERVICOS = [
     id: 'excecao-pagamento',
     titulo: 'Central de Automações',
     texto: 'Execute qualquer automação do time de tesouraria.',
-    icone: 'play',
+    icone: 'automacao',
     ativo: false,
   },
 
