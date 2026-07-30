@@ -594,10 +594,33 @@ function limparNome(texto) {
  * O pacote completo do que se consegue tirar do TEXTO (fora do código de
  * barras, que é trabalho do boleto-parser.js).
  */
+/**
+ * Tira o carimbo que navegador e cliente de e-mail põem ao imprimir em PDF.
+ * Foi o que fez uma fatura da Enel devolver a data da IMPRESSÃO como
+ * vencimento — um número plausível, no campo certo, e nada avisando.
+ */
+const LINHAS_DE_CARIMBO = [
+  /^\s*https?:\/\/\S+\s*(\d+\s*\/\s*\d+)?\s*$/i,
+  /\boutlook\b/i,
+  /caixa de entrada/i,
+  /\bgmail\b/i,
+  /\d{1,2}\/\d{1,2}\/\d{4},?\s+\d{1,2}:\d{2}/,
+  /^\s*\d+\s*\/\s*\d+\s*$/,
+  /javascript:|about:blank/i,
+];
+
+export function limparCarimboDeImpressao(texto) {
+  return String(texto ?? '')
+    .split('\n')
+    .filter((linha) => !LINHAS_DE_CARIMBO.some((padrao) => padrao.test(linha)))
+    .join('\n');
+}
+
 export function extrairCamposDoTexto(texto, { ehNossaEmpresa = () => false, tipoDocumento = null } = {}) {
-  const documentos = separarEmpresaEFornecedor(texto, ehNossaEmpresa);
-  const numeros = acharNumerosDeDocumento(texto);
-  const fornecedor = acharRazaoSocialFornecedor(texto, documentos.fornecedor ?? null);
+  const limpo = limparCarimboDeImpressao(texto);
+  const documentos = separarEmpresaEFornecedor(limpo, ehNossaEmpresa);
+  const numeros = acharNumerosDeDocumento(limpo);
+  const fornecedor = acharRazaoSocialFornecedor(limpo, documentos.fornecedor ?? null);
 
   // Se sabemos que é NF, um candidato marcado como NF vale mais.
   const numerosOrdenados = tipoDocumento
@@ -636,4 +659,5 @@ export default {
   acharNumerosDeDocumento,
   acharRazaoSocialFornecedor,
   extrairCamposDoTexto,
+  limparCarimboDeImpressao,
 };

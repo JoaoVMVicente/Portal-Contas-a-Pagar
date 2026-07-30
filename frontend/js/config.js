@@ -77,10 +77,21 @@ export const CONFIG = {
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.mjs',
     'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.min.mjs',
   ],
-  CDN_TESSERACT: [
+CDN_TESSERACT: [
     'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js',
     'https://unpkg.com/tesseract.js@5/dist/tesseract.esm.min.js',
   ],
+
+  // Leitor de código de barras e QR code. É o motor ZXing em C++ compilado
+  // para WebAssembly — o mesmo que decodifica os códigos gráficos do boleto.
+  CDN_ZXING: [
+    'https://cdn.jsdelivr.net/npm/zxing-wasm@2/dist/reader/index.js',
+    'https://unpkg.com/zxing-wasm@2/dist/reader/index.js',
+    'https://esm.sh/zxing-wasm@2/reader',
+  ],
+
+  // Quantas páginas do PDF procurar códigos gráficos.
+  PAGINAS_PARA_LER_CODIGOS: 3,
 };
 
 /** Decide o modo de verdade. */

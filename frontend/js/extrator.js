@@ -43,6 +43,7 @@
 import { CONFIG } from './config.js';
 import parser from './boleto-parser.js';
 import campos from './boleto-campos.js';
+import grafico from './leitor-grafico.js';
 
 /* ========================================================================== *
  * Carregar bibliotecas, com endereço alternativo se um CDN cair
@@ -136,6 +137,35 @@ async function textoDoPdf(arquivo, aoProgredir) {
 }
 
 /** Transforma a primeira página num desenho, para o OCR ter o que olhar. */
+/**
+ * Desenha as primeiras páginas do PDF, para o leitor de códigos gráficos.
+ *
+ * A escala importa mais do que parece. Nos testes com a fatura da Enel, o
+ * código de barras só foi decodificado a partir de 3x — a 2x as barras finas
+ * se fundiam e a biblioteca não achava nada. Por outro lado, escalas muito
+ * altas geram imagens de dezenas de megapixels e travam máquinas modestas.
+ * Por isso tentamos 2x primeiro (rápido, resolve a maioria) e só subimos
+ * para 3x se não encontrarmos o código de barras.
+ */
+async function paginasParaImagem(documento, escala, maximoDePaginas) {
+  const telas = [];
+  const paginas = Math.min(documento.numPages, maximoDePaginas);
+
+  for (let n = 1; n <= paginas; n += 1) {
+    const pagina = await documento.getPage(n);
+    const vista = pagina.getViewport({ scale: escala });
+    const tela = document.createElement('canvas');
+    tela.width = Math.floor(vista.width);
+    tela.height = Math.floor(vista.height);
+    await pagina.render({
+      canvasContext: tela.getContext('2d', { willReadFrequently: true }),
+      viewport: vista,
+    }).promise;
+    telas.push(tela);
+  }
+  return telas;
+}
+
 async function pdfParaImagem(documento, escala = 2.6) {
   const pagina = await documento.getPage(1);
   const vista = pagina.getViewport({ scale: escala });
@@ -209,12 +239,73 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
     }
   }
 
+  // ---------------------------------------------------------------- NÍVEL 0
+  // Os códigos DESENHADOS no boleto: código de barras e QR codes.
+  //
+  // Vem antes de tudo porque é a leitura mais confiável que existe: esses
+  // desenhos são feitos para máquina ler, com detecção de erro embutida. Ou
+  // decodificam certo, ou não decodificam — não existe "quase".
+  //
+  // E funciona no caso que quebrava tudo: PDF que é só imagem. Não importa se
+  // há texto dentro do arquivo; o desenho está lá do mesmo jeito.
+  let doGrafico = null;
+
+  if (ehPdf && documentoPdf) {
+    for (const escala of [2, 3]) {
+      try {
+        aoProgredir?.('Procurando o código de barras...');
+        const telas = await paginasParaImagem(
+          documentoPdf,
+          escala,
+          CONFIG.PAGINAS_PARA_LER_CODIGOS
+        );
+        doGrafico = await grafico.lerCodigosDasPaginas(telas, aoProgredir);
+        // Libera a memória das telas assim que possível.
+        telas.forEach((t) => { t.width = 0; t.height = 0; });
+        if (doGrafico?.codigoBarras) break;
+      } catch (erro) {
+        console.warn('Leitura dos códigos gráficos falhou:', erro);
+      }
+    }
+  } else if (!ehPdf) {
+    // Imagem solta (foto ou print): desenhamos num canvas e lemos igual.
+    try {
+      aoProgredir?.('Procurando o código de barras...');
+      const bitmap = await createImageBitmap(arquivo);
+      const tela = document.createElement('canvas');
+      tela.width = bitmap.width;
+      tela.height = bitmap.height;
+      tela.getContext('2d', { willReadFrequently: true }).drawImage(bitmap, 0, 0);
+      doGrafico = await grafico.lerCodigosDasPaginas([tela], aoProgredir);
+      bitmap.close?.();
+    } catch (erro) {
+      console.warn('Leitura dos códigos gráficos falhou:', erro);
+    }
+  }
+
   // ------------------------------------------------------- NÍVEL 2 (cálculo)
   let doCodigo = texto ? parser.extrairDadosDeTexto(texto) : null;
 
+  // O código de barras lido do desenho ganha de qualquer coisa vinda do texto.
+  if (doGrafico?.codigoBarras) {
+    const doDesenho = parser.interpretarCodigo(doGrafico.codigoBarras);
+    if (doDesenho?.codigoBarras) {
+      doCodigo = {
+        ...doDesenho,
+        confianca: doDesenho.dvValido ? 'alta' : 'media',
+        metodo: 'codigo-de-barras-da-imagem',
+        avisos: doDesenho.avisos ?? [],
+      };
+      metodoTexto = 'codigo-grafico';
+    }
+  }
+
   // ------------------------------------------------------------ NÍVEL 3 (OCR)
+  // O OCR agora é o QUARTO recurso, não o terceiro: se o código de barras foi
+  // decodificado do desenho, não há o que ele possa melhorar.
   const precisaOcr =
     CONFIG.USAR_OCR &&
+    !doGrafico?.codigoBarras &&
     (!doCodigo?.codigoBarras || doCodigo.confianca === 'baixa') &&
     (!ehPdf || !texto.trim() || !doCodigo?.valor);
 
@@ -283,7 +374,66 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
     avisos: [],
   };
 
+  /* ---------------------------------------------------------------------- *
+   * Os QR codes preenchem o que o texto não conseguiu
+   * ---------------------------------------------------------------------- *
+   * Ordem de preferência: o que veio do texto primeiro (porque ali sabemos o
+   * contexto — qual rótulo, qual linha), e o QR code como reserva. A exceção
+   * é o número da nota: a chave fiscal é o número OFICIAL do documento, então
+   * ela ganha de um palpite de rótulo.
+   */
+  const doQr = { usados: [] };
+
+  if (doGrafico?.fiscal) {
+    const f = doGrafico.fiscal;
+
+    // O CNPJ de quem emitiu a nota é o do fornecedor, salvo se for do grupo.
+    if (!doTexto.fornecedorCnpj && !ehNossaEmpresa(f.cnpjEmitente)) {
+      doTexto.fornecedorCnpj = f.cnpjEmitente;
+      doTexto.fornecedorCnpjConferido = true;
+      doQr.usados.push('CNPJ do fornecedor');
+    }
+
+    // O número da nota vindo da chave fiscal é oficial, não é palpite.
+    if (f.numeroNota && f.numeroNota !== '0') {
+      doTexto.numeroDocumento = f.numeroNota;
+      doTexto.numeroDocumentoConfianca = 'alta';
+      doQr.usados.push('número da nota');
+    }
+
+    // Se a nota é do nosso grupo, o CNPJ dela identifica a nossa empresa.
+    if (!doTexto.unidadeCnpj && ehNossaEmpresa(f.cnpjEmitente)) {
+      doTexto.unidadeCnpj = f.cnpjEmitente;
+    }
+  }
+
+  if (doGrafico?.pix) {
+    const p = doGrafico.pix;
+    if (!doTexto.fornecedorRazaoSocial && p.nomeRecebedor) {
+      doTexto.fornecedorRazaoSocial = p.nomeRecebedor;
+      doTexto.fornecedorRazaoSocialConfianca = 'media';
+      doQr.usados.push('nome do fornecedor');
+    }
+    // O valor do PIX serve de conferência quando não temos código de barras.
+    if (base.valor == null && p.valor != null) {
+      base.valor = p.valor;
+      doQr.usados.push('valor');
+    }
+  }
+
   const avisos = [...(base.avisos ?? []), ...(doTexto.avisos ?? [])];
+
+  if (doGrafico?.codigoBarras) {
+    avisos.push('Valor e vencimento vieram do código de barras lido da imagem, e o dígito verificador fechou.');
+  }
+  if (doQr.usados.length) {
+    avisos.push(`Do QR code eu aproveitei: ${doQr.usados.join(', ')}.`);
+  }
+  if (!doGrafico?.codigoBarras && ehPdf && texto.trim().length < 400) {
+    avisos.push(
+      'Este PDF quase não tem texto — provavelmente é uma imagem. Confira todos os campos com atenção.'
+    );
+  }
 
   if (!texto.trim()) {
     avisos.push('Não consegui ler nada de dentro deste arquivo. Preencha os campos à mão.');
@@ -312,6 +462,16 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
     fornecedorRazaoSocial: doTexto.fornecedorRazaoSocial,
     fornecedorRazaoSocialConfianca: doTexto.fornecedorRazaoSocialConfianca,
     documentosEncontrados: doTexto.documentosEncontrados ?? [],
+
+    // O que os códigos gráficos entregaram, para a tela poder mostrar
+    codigosGraficos: doGrafico
+      ? {
+          codigoBarras: doGrafico.codigoBarras,
+          pix: doGrafico.pix,
+          fiscal: doGrafico.fiscal,
+          quantidade: doGrafico.brutos?.length ?? 0,
+        }
+      : null,
 
     avisos,
     textoBruto: texto.slice(0, 20000),
