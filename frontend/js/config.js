@@ -3,12 +3,8 @@
  */
 
 export const CONFIG = {
-  // ---------------------------------------------------------------------
-  // COLE AQUI as duas chaves do Supabase (Project Settings > API).
-  // Enquanto estiverem vazias, o portal roda em modo demonstração.
-  // ---------------------------------------------------------------------
-  SUPABASE_URL: '',
-  SUPABASE_ANON_KEY: '',
+  SUPABASE_URL: 'https://whmuzwnooefpqbkvhoap.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_FuyNCfKewtg3TCCV6_1P1A_hn-ZnM6M',
 
   // 'auto' decide sozinho: com chaves usa o banco, sem chaves usa a demo.
   // Force com 'supabase' ou 'demo' se quiser testar um dos dois.
