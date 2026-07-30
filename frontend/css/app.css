@@ -1790,26 +1790,41 @@ select[aria-invalid='true']:focus {
 .trilha__item--feito .trilha__rotulo { color: var(--cinza-70); }
 
 /* ------------------------------------------------------------ etapas ----- */
+/* --------------------------------------------------------------------------
+ * UMA ETAPA POR VEZ, NO MESMO LUGAR
+ * --------------------------------------------------------------------------
+ * Antes as oito etapas ficavam empilhadas: a atual aberta, as anteriores
+ * resumidas numa linha e as seguintes acinzentadas. Mostrava o tamanho da
+ * tarefa, mas fazia a página crescer e a pessoa rolar para achar onde estava.
+ *
+ * Agora só a etapa atual existe na tela, sempre na mesma posição. Quem dá a
+ * noção de progresso é a trilha no topo, que é o lugar certo para isso.
+ *
+ * A regra é uma linha: tudo escondido, menos a ativa. Não precisei mexer em
+ * JavaScript nenhum porque as classes já eram trocadas do jeito certo.
+ * -------------------------------------------------------------------------- */
 .etapa {
+  display: none;
   background: var(--branco);
-  border: 1px solid var(--cinza-15);
+  border: 1px solid var(--coral-borda);
   border-radius: var(--raio-g);
-  margin-bottom: 12px;
-  transition: box-shadow var(--transicao), border-color var(--transicao),
-              opacity var(--transicao);
-}
-
-.etapa--ativa {
-  border-color: var(--coral-borda);
   box-shadow: var(--sombra-2);
 }
 
-.etapa--concluida { background: var(--cinza-4); }
+.etapa--ativa {
+  display: block;
+  /* Uma aparição curta para o olho registrar que o painel trocou. Sem isso a
+     mudança é instantânea e dá a impressão de que nada aconteceu. */
+  animation: etapa-entra 180ms ease-out;
+}
 
-.etapa--bloqueada {
-  opacity: 0.5;
-  pointer-events: none;
-  background: var(--cinza-4);
+@keyframes etapa-entra {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .etapa--ativa { animation: none; }
 }
 
 .etapa__topo {

@@ -171,16 +171,22 @@ function irParaEtapa(n) {
 
   pintarTrilha();
 
+  // Com uma etapa por vez, o painel troca no mesmo lugar. Então o certo é
+  // subir para a trilha — não rolar até a seção, que já está ali.
+  const trilha = el('trilha');
+  if (trilha) {
+    const y = trilha.getBoundingClientRect().top + window.scrollY - 24;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  }
+
+  // Foca o primeiro campo, para quem usa teclado não precisar caçar.
   const alvo = secao(n);
   if (alvo) {
-    const y = alvo.getBoundingClientRect().top + window.scrollY - 90;
-    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-    // Foca o primeiro campo da etapa, para quem usa teclado não se perder.
     setTimeout(() => {
       alvo.querySelector('input:not([readonly]):not([type=file]), select, textarea')?.focus({
         preventScroll: true,
       });
-    }, 320);
+    }, 220);
   }
 }
 
