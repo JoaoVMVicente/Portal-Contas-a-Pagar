@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Financeiro — Contas a Pagar | Serena</title>
+  <link rel="icon" href="assets/img/simbolo.png" />
+  <link rel="stylesheet" href="css/fonts.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <img class="sidebar__logo" src="assets/img/logo-serena.png" alt="Serena Energia" />
+      <span class="sidebar__tag">Portal Financeiro<br />Contas a Pagar</span>
+    </aside>
+
+    <!-- Conteúdo -->
+    <main class="main">
+      <div class="container">
+
+        <!-- Topbar -->
+        <header class="topbar">
+          <div class="topbar__greeting">
+            <h1>Olá, <span id="user-name">[Nome do Usuário]</span>! <span aria-hidden="true">👋</span></h1>
+            <p class="sub">Bem-vindo(a) ao Portal Financeiro – Contas a Pagar</p>
+            <p class="desc">Centralize suas solicitações, acompanhe processos e tenha mais autonomia.</p>
+          </div>
+          <div class="topbar__user">
+            <button class="bell" id="btn-bell" aria-label="Notificações">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="bell__count" id="bell-count">3</span>
+            </button>
+            <button class="user-chip" id="btn-user">
+              <span class="avatar" id="avatar">SN</span>
+              <span class="user-chip__info">
+                <span class="name" id="user-name-2">Seu Nome</span>
+                <span class="role">Área Financeira</span>
+              </span>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- Seção de serviços -->
+        <h2 class="section-title">O que você precisa?</h2>
+        <p class="section-desc">Escolha uma das opções abaixo para abrir uma solicitação ou consultar informações.</p>
+
+        <section class="cards" id="cards"><!-- injetado via JS --></section>
+
+        <!-- Faixa inferior -->
+        <section class="bottom">
+          <div class="panel">
+            <div class="panel__head">
+              <span class="title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Comunicados
+              </span>
+              <a href="#" class="panel__link" id="ver-todos">Ver todos</a>
+            </div>
+            <p class="panel__caption">Fique por dentro das últimas informações do time de Contas a Pagar.</p>
+
+            <div class="comunicado">
+              <span class="comunicado__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </span>
+              <div class="comunicado__body" id="comunicado-body">
+                <!-- injetado via JS -->
+              </div>
+              <div class="comunicado__nav">
+                <button class="nav-arrow" id="com-prev" aria-label="Anterior">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button class="nav-arrow" id="com-next" aria-label="Próximo">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel suporte">
+            <span class="title">Fale com o time<br />Contas a Pagar</span>
+            <p>Tem dúvidas ou precisa de suporte? Fale diretamente com o time no Microsoft Teams.</p>
+            <button class="btn btn--solid" id="btn-teams">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              Abrir no Teams
+            </button>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <img src="assets/img/logo-serena.png" alt="Serena" />
+          © 2026 Serena Energia. Todos os direitos reservados.
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

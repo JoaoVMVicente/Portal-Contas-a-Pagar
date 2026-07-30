@@ -1,0 +1,100 @@
+/* Estilos específicos das páginas de serviço */
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 28px;
+  color: var(--coral);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.voltar:hover { text-decoration: underline; }
+
+.servico-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 20px 0 28px;
+}
+.servico-head__icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--coral-soft);
+  color: var(--coral);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.servico-head__icon svg { width: 26px; height: 26px; }
+.servico-head h1 {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 26px;
+}
+.servico-head p { font-size: 14px; color: var(--grafite-claro); margin-top: 2px; }
+
+.painel-servico {
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: var(--radio);
+  padding: 24px;
+  box-shadow: var(--sombra);
+  margin-bottom: 48px;
+}
+.painel-servico__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.painel-servico__head h2 {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.estado {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--grafite-claro);
+  font-size: 14px;
+}
+
+/* Tabela de solicitações */
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.tabela th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--grafite-claro);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--borda);
+}
+.tabela td {
+  padding: 14px;
+  border-bottom: 1px solid var(--borda);
+}
+.tabela tbody tr:hover { background: #faf8f6; }
+
+.status {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+.status--ok       { background: #e2f7ef; color: #1f9c78; }
+.status--analise  { background: #fff4e0; color: #b8791a; }
+.status--pendente { background: var(--coral-soft); color: var(--coral); }
+
+@media (max-width: 720px) {
+  .tabela { font-size: 13px; }
+  .tabela th:nth-child(3), .tabela td:nth-child(3) { display: none; } /* esconde fornecedor no mobile */
+}
