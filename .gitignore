@@ -1,0 +1,40 @@
+# Dependências
+node_modules/
+.pnpm-store/
+
+# Segredos — NUNCA subir
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/js/config.local.js
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Registros e temporários
+*.log
+npm-debug.log*
+tmp/
+temp/
+
+# Saída do importador de Excel (regerada quando precisar)
+frontend/data/unidades-negocio.problemas.json
+
+# Planilhas com dados da empresa
+*.xlsx
+*.xls
+*.xlsm
+!docs/exemplo-*.xlsx
+
+# Boletos de teste
+*.pdf
+!docs/**/*.pdf

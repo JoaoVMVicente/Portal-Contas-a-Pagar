@@ -1,0 +1,16 @@
+{
+  "name": "portal-boletos-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ferramentas de apoio: importar o Excel de empresas do grupo para JSON e SQL.",
+  "scripts": {
+    "inspecionar": "node excel-para-json.mjs --inspecionar --arquivo",
+    "importar": "node excel-para-json.mjs",
+    "convidar": "node convidar-equipe.mjs"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5",
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

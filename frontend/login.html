@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Entrar · Portal Serena</title>
+  <link rel="icon" href="./assets/logos/serena-simbolo.png" />
+  <link rel="stylesheet" href="./css/app.css" />
+</head>
+<body>
+  <main class="tela-login">
+    <div class="caixa-login">
+      <img class="caixa-login__logo" src="./assets/logos/serena-coral-horizontal.png" alt="Serena" />
+
+      <div id="mensagem-topo"></div>
+
+      <!-- ==================== ENTRAR ==================== -->
+      <section id="painel-entrar">
+        <h1>Entrar no portal</h1>
+        <p class="caixa-login__sub">Use seu e-mail da Serena.</p>
+
+        <form id="form-entrar" novalidate>
+          <div class="campo">
+            <label class="campo__rotulo" for="email">E-mail <span class="obrigatorio">*</span></label>
+            <input type="email" id="email" autocomplete="username" required
+                   placeholder="nome.sobrenome@srna.co" />
+            <span class="campo__dica">Funciona com @srna.co e @ext.srna.co.</span>
+            <span class="campo__erro oculto" id="erro-email"></span>
+          </div>
+
+          <div class="campo" style="margin-top:16px;">
+            <label class="campo__rotulo" for="senha">Senha <span class="obrigatorio">*</span></label>
+            <div class="campo-com-botao">
+              <input type="password" id="senha" autocomplete="current-password" required />
+              <button type="button" class="acao-icone" id="ver-senha"
+                      aria-label="Mostrar a senha" title="Mostrar a senha"></button>
+            </div>
+            <span class="campo__erro oculto" id="erro-senha"></span>
+          </div>
+
+          <button type="submit" class="botao botao--principal botao--bloco" id="botao-entrar"
+                  style="margin-top:24px;">Entrar</button>
+        </form>
+
+        <!-- Aparece depois de uma tentativa que não deu certo -->
+        <div id="caixa-primeiro-acesso" class="oculto">
+          <div class="separador-ou"><span>ou</span></div>
+          <button type="button" class="botao botao--contorno botao--bloco" id="botao-ir-primeiro-acesso">
+            <span data-icone="cadeado"></span> Primeiro acesso
+          </button>
+          <p class="campo__dica" style="text-align:center;margin-top:8px;">
+            Nunca entrou neste portal? É por aqui que você cria sua senha.
+          </p>
+        </div>
+
+        <div style="margin-top:18px;text-align:center;">
+          <button type="button" class="botao botao--fantasma botao--pequeno" id="botao-esqueci">
+            Esqueci minha senha
+          </button>
+        </div>
+      </section>
+
+      <!-- ================ PRIMEIRO ACESSO ================ -->
+      <section id="painel-primeiro-acesso" class="oculto">
+        <h1>Primeiro acesso</h1>
+        <p class="caixa-login__sub">
+          Vamos enviar um link para o seu e-mail. É por ele que você escolhe sua senha.
+        </p>
+
+        <div class="aviso aviso--info" style="margin:18px 0;">
+          <span data-icone="cadeado"></span>
+          <div>
+            <span class="aviso__titulo">Por que não dá para escolher a senha aqui mesmo?</span>
+            Porque qualquer pessoa poderia digitar o e-mail de um colega e criar
+            uma senha por ele. Abrir o link prova que a caixa de e-mail é sua —
+            e essa é a única prova que existe.
+          </div>
+        </div>
+
+        <form id="form-primeiro-acesso" novalidate>
+          <div class="campo">
+            <label class="campo__rotulo" for="email-primeiro">Seu e-mail <span class="obrigatorio">*</span></label>
+            <input type="email" id="email-primeiro" autocomplete="username" required
+                   placeholder="nome.sobrenome@srna.co" />
+            <span class="campo__erro oculto" id="erro-email-primeiro"></span>
+          </div>
+
+          <button type="submit" class="botao botao--principal botao--bloco" id="botao-enviar-link"
+                  style="margin-top:22px;">Enviar link de ativação</button>
+        </form>
+
+        <div style="margin-top:16px;text-align:center;">
+          <button type="button" class="botao botao--fantasma botao--pequeno" id="voltar-do-primeiro">
+            Voltar para o login
+          </button>
+        </div>
+      </section>
+
+      <!-- ================ ESCOLHER A SENHA ================ -->
+      <section id="painel-definir-senha" class="oculto">
+        <h1>Escolha sua senha</h1>
+        <p class="caixa-login__sub" id="sub-definir">Última etapa.</p>
+
+        <form id="form-definir-senha" novalidate>
+          <div class="grupo-campos" style="grid-template-columns:1fr 1fr;">
+            <div class="campo">
+              <label class="campo__rotulo" for="nome-ativacao">Nome</label>
+              <input type="text" id="nome-ativacao" autocomplete="given-name" />
+            </div>
+            <div class="campo">
+              <label class="campo__rotulo" for="sobrenome-ativacao">Sobrenome</label>
+              <input type="text" id="sobrenome-ativacao" autocomplete="family-name" />
+            </div>
+          </div>
+
+          <div class="campo" style="margin-top:16px;">
+            <label class="campo__rotulo" for="senha-nova">Senha <span class="obrigatorio">*</span></label>
+            <div class="campo-com-botao">
+              <input type="password" id="senha-nova" autocomplete="new-password" required />
+              <button type="button" class="acao-icone" id="ver-senha-nova"
+                      aria-label="Mostrar a senha"></button>
+            </div>
+            <div class="medidor-senha" aria-hidden="true">
+              <div class="medidor-senha__barra" id="barra-senha"></div>
+            </div>
+            <span class="campo__dica" id="dica-forca">Use pelo menos 8 caracteres.</span>
+            <span class="campo__erro oculto" id="erro-senha-nova"></span>
+          </div>
+
+          <div class="campo" style="margin-top:16px;">
+            <label class="campo__rotulo" for="senha-repetir">Repita a senha <span class="obrigatorio">*</span></label>
+            <input type="password" id="senha-repetir" autocomplete="new-password" required />
+            <span class="campo__erro oculto" id="erro-senha-repetir"></span>
+          </div>
+
+          <button type="submit" class="botao botao--principal botao--bloco" id="botao-salvar-senha"
+                  style="margin-top:24px;">Ativar minha conta e entrar</button>
+        </form>
+      </section>
+
+      <div class="rodape-login">
+        <span id="rodape-modo"></span>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./js/pagina-login.js"></script>
+</body>
+</html>

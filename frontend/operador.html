@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Painel de associação · Serena</title>
+  <link rel="icon" href="./assets/logos/serena-simbolo.png" />
+  <link rel="stylesheet" href="./css/app.css" />
+</head>
+<body>
+  <div class="pagina">
+    <div id="topo"></div>
+
+    <main class="conteudo">
+      <div class="cabecalho-pagina">
+        <div class="cabecalho-pagina__linha">
+          <div>
+            <h1 id="titulo-painel">Painel de associação de boletos</h1>
+            <p class="cabecalho-pagina__sub" id="sub-painel">Carregando...</p>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="botao botao--contorno botao--pequeno" id="botao-exportar">
+              <span data-icone="download"></span> Exportar CSV
+            </button>
+            <button class="botao botao--contorno botao--pequeno" id="botao-atualizar">
+              <span data-icone="atualizar"></span> Atualizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ NF / MD ============ -->
+      <!-- Para quem tem escopo 'ambos', aqui vira um alternador entre as duas
+           filas. Para quem tem escopo fixo, vira um selo informativo. -->
+      <div id="seletor-tipo"></div>
+
+      <!-- ===================== OS QUATRO CARTÕES ===================== -->
+      <section class="grade-kpis" aria-label="Indicadores">
+        <div class="kpi" id="kpi-total">
+          <div class="kpi__icone kpi__icone--coral" data-icone="documento"></div>
+          <div class="kpi__texto">
+            <p class="kpi__rotulo" id="rotulo-total">Total de boletos</p>
+            <p class="kpi__valor kpi__valor--carregando" id="valor-total-boletos">—</p>
+          </div>
+        </div>
+        <div class="kpi" id="kpi-valor">
+          <div class="kpi__icone kpi__icone--verde" data-icone="dinheiro"></div>
+          <div class="kpi__texto">
+            <p class="kpi__rotulo">Valor total</p>
+            <p class="kpi__valor kpi__valor--carregando" id="valor-soma">—</p>
+          </div>
+        </div>
+        <div class="kpi" id="kpi-pendentes">
+          <div class="kpi__icone kpi__icone--cinza" data-icone="relogio"></div>
+          <div class="kpi__texto">
+            <p class="kpi__rotulo">Pendentes</p>
+            <p class="kpi__valor kpi__valor--carregando" id="valor-pendentes">—</p>
+          </div>
+        </div>
+        <div class="kpi" id="kpi-associados">
+          <div class="kpi__icone kpi__icone--verde" data-icone="check"></div>
+          <div class="kpi__texto">
+            <p class="kpi__rotulo">Associados</p>
+            <p class="kpi__valor kpi__valor--carregando" id="valor-associados">—</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================== FILTROS ========================== -->
+      <div class="barra-filtros">
+        <div class="busca">
+          <span data-icone="busca"></span>
+          <label class="so-leitor-de-tela" for="busca">Buscar</label>
+          <input type="search" id="busca"
+                 placeholder="Buscar por nome, fornecedor, CNPJ, número, conta ou código de barras" />
+        </div>
+
+        <div class="abas-status" role="group" aria-label="Filtrar por situação">
+          <button type="button" class="abas-status__item" data-status="todos" aria-pressed="true">
+            Todos <span class="abas-status__contador" id="cont-todos"></span>
+          </button>
+          <button type="button" class="abas-status__item" data-status="pendente" aria-pressed="false">
+            Pendentes <span class="abas-status__contador" id="cont-pendente"></span>
+          </button>
+          <button type="button" class="abas-status__item" data-status="associado" aria-pressed="false">
+            Associados <span class="abas-status__contador" id="cont-associado"></span>
+          </button>
+          <button type="button" class="abas-status__item" data-status="recusado" aria-pressed="false">
+            Recusados <span class="abas-status__contador" id="cont-recusado"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ========================== A TABELA ========================= -->
+      <div class="moldura-tabela">
+        <div class="rolagem-tabela">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th class="col-neutra">Boleto</th>
+                <th data-ordenar="documento_rotulo">NF/MD</th>
+                <th data-ordenar="data_envio">Data</th>
+                <th data-ordenar="nome">Nome</th>
+                <th data-ordenar="cc">CC</th>
+                <th data-ordenar="unidade_negocio">Und. neg / CNPJ</th>
+                <th data-ordenar="fornecedor_razao_social">Fornecedor / CNPJ</th>
+                <th class="col-neutra" data-ordenar="valor">Valor</th>
+                <th class="col-neutra" data-ordenar="vencimento">Vencimento</th>
+                <th class="col-neutra">Cód Barras</th>
+                <th class="col-neutra" data-ordenar="data_associacao">Data associação</th>
+                <th data-ordenar="associado_por_nome">Executado por</th>
+                <th class="col-neutra">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="corpo-tabela"></tbody>
+          </table>
+        </div>
+        <div class="rodape-tabela">
+          <span id="resumo-tabela">Carregando...</span>
+          <div class="paginacao">
+            <button class="botao botao--contorno botao--pequeno" id="pagina-anterior">Anterior</button>
+            <span id="indicador-pagina" style="min-width:90px;text-align:center;"></span>
+            <button class="botao botao--contorno botao--pequeno" id="pagina-proxima">Próxima</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="rodape"></div>
+  </div>
+
+  <script type="module" src="./js/pagina-operador.js"></script>
+</body>
+</html>
