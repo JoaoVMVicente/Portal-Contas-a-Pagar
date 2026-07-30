@@ -1,0 +1,86 @@
+# ===========================================================================
+# Publica o portal no GitHub Pages.
+# ===========================================================================
+# POR QUE ESTE ARQUIVO EXISTE
+# ---------------------------
+# O GitHub Pages, no modo simples, publica uma pasta do repositório. Se você
+# apontar para /frontend, o endereço fica com "/frontend/" no meio:
+#
+#     joaovmvicente.github.io/Portal-Contas-a-Pagar/frontend/
+#
+# É feio, e a tentação é mover os arquivos do frontend para a raiz do
+# repositório para resolver. NÃO FAÇA ISSO: o portal usa caminhos relativos
+# (./js/..., ./cliente.html) e mover as telas quebra a navegação inteira.
+#
+# Este workflow resolve sem mover nada: ele pega APENAS a pasta frontend e
+# publica como se ela fosse a raiz. O endereço fica limpo:
+#
+#     joaovmvicente.github.io/Portal-Contas-a-Pagar/
+#
+# COMO LIGAR
+# ----------
+# 1. Deixe este arquivo em .github/workflows/publicar.yml
+# 2. git push
+# 3. No repositório: Settings > Pages > Source: "GitHub Actions"
+# 4. Cada push na main republica sozinho
+#
+# ANTES DE PUBLICAR, confira duas coisas:
+#   - frontend/js/config.js precisa ter as chaves do Supabase preenchidas
+#   - o endereço do Pages precisa estar nas Redirect URLs do Supabase,
+#     em Authentication > URL Configuration:
+#       https://joaovmvicente.github.io/**
+# ===========================================================================
+
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Se dois pushes acontecerem juntos, o segundo cancela o primeiro em vez de
+# ficarem os dois na fila publicando versões diferentes.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publicacao.outputs.page_url }}
+
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v4
+
+      - name: Conferir se as chaves do Supabase foram preenchidas
+        run: |
+          if grep -q "SUPABASE_URL: ''" frontend/js/config.js; then
+            echo "::warning::O config.js está sem a URL do Supabase. O portal vai abrir em modo demonstração."
+          fi
+          if grep -q "SUPABASE_ANON_KEY: ''" frontend/js/config.js; then
+            echo "::warning::O config.js está sem a chave do Supabase. O portal vai abrir em modo demonstração."
+          fi
+          if grep -q "sb_publishable_.*\.\.\.'" frontend/js/config.js; then
+            echo "::error::A chave do Supabase parece estar CORTADA (termina em ...). Copie a chave inteira pelo botão de copiar do painel."
+            exit 1
+          fi
+
+      - name: Configurar o Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enviar apenas a pasta frontend
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./frontend
+
+      - name: Publicar
+        id: publicacao
+        uses: actions/deploy-pages@v4

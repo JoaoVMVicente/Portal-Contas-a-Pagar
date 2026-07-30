@@ -3,6 +3,26 @@
  */
 
 export const CONFIG = {
+  // ---------------------------------------------------------------------
+  // AS DUAS CHAVES DO SUPABASE
+  // ---------------------------------------------------------------------
+  // Onde achar: Project Settings > API Keys (a página mudou de nome; antes
+  // era só "API").
+  //
+  // A URL já está preenchida com o projeto "DB Portal Boletos".
+  //
+  // Falta a chave. Use a "Publishable key" (sb_publishable_...), NÃO a aba
+  // "Legacy anon". Projetos criados de 2026 em diante podem nem ter as
+  // chaves legacy, e elas serão desativadas no fim de 2026.
+  //
+  // IMPORTANTE: copie pelo BOTÃO DE COPIAR do painel, não selecionando com
+  // o mouse. O painel mostra a chave abreviada com "...", e selecionar pega
+  // só o pedaço visível. Se a linha abaixo terminar com "...", está cortada.
+  //
+  // Esta chave pode ficar visível no GitHub: ela só identifica o projeto.
+  // Quem protege os dados é o RLS do banco. A chave que NUNCA pode aparecer
+  // aqui é a "Secret key" (sb_secret_...) — essa vive só em backend/.env.
+  // ---------------------------------------------------------------------
   SUPABASE_URL: 'https://whmuzwnooefpqbkvhoap.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_FuyNCfKewtg3TCCV6_1P1A_hn-ZnM6M',
 

@@ -3,6 +3,9 @@
 Portal onde as pessoas enviam boletos de fornecedores e a equipe de operação faz
 a associação. Roda **na sua máquina** e também no **GitHub Pages**.
 
+> **Extraindo o zip?** Leia o [`LEIA-PRIMEIRO.md`](LEIA-PRIMEIRO.md) antes —
+> são dois minutos e evitam o erro mais comum (extrair sobre uma pasta antiga).
+
 **Comece por aqui:** [`docs/01-COMO-RODAR.md`](docs/01-COMO-RODAR.md) — em dois
 comandos você vê o portal funcionando com dados de exemplo.
 
