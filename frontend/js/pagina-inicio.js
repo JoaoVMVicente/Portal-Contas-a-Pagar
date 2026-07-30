@@ -24,18 +24,12 @@ const SERVICOS = [
   },
   {
     id: 'excecao-pagamento',
-    titulo: 'Exceção de pagamento',
-    texto: 'Solicitação de pagamento fora do fluxo padrão.',
-    icone: 'raio',
+    titulo: 'Central de Automações',
+    texto: 'Execute qualquer automação do time de tesouraria.',
+    icone: 'play',
     ativo: false,
   },
-  {
-    id: 'consulta-notas',
-    titulo: 'Consulta de notas fiscais',
-    texto: 'Situação de escrituração e forma de pagamento das suas notas.',
-    icone: 'planilha',
-    ativo: false,
-  },
+
 ];
 
 async function iniciar() {
