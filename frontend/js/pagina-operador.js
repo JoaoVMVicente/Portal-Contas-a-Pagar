@@ -26,7 +26,7 @@ import { montarTopo, montarRodape, ligarBotaoDemo, montarSeletorDeTipo } from '.
 import {
   ICONES, avisar, escapar, moeda, moedaCurta, numero, data as fmtData, dataHora,
   tamanhoArquivo, cnpj as fmtCnpj, pintarIcones, copiar, abrirModal, confirmar,
-  pedirTexto, aguardarPausa,
+  pedirTexto, aguardarPausa, comBotaoOcupado,
 } from './ui.js';
 import parser from './boleto-parser.js';
 import {
@@ -43,8 +43,10 @@ const estado = {
   status: 'todos',
   busca: '',
   pagina: 1,
-  ordenarPor: 'data_envio',
-  ordem: 'desc',
+  // A fila abre pelo que vence primeiro — é a ordem em que o trabalho precisa
+  // ser feito, não a ordem em que os boletos chegaram.
+  ordenarPor: 'vencimento',
+  ordem: 'asc',
   total: 0,
   linhas: [],
   kpisAnteriores: {},
@@ -79,6 +81,11 @@ async function iniciar() {
   });
 
   atualizarTitulo();
+
+  // A aba de descartados só existe para quem tem a permissão. Quem não tem
+  // nem vê que a ação existe — e se forçar o filtro, o banco recusa a ação.
+  if (sessao.podeDescartar()) el('aba-descartados')?.classList.remove('oculto');
+
   ligarFiltros();
   ligarOrdenacao();
   ligarBotoes();
@@ -124,6 +131,7 @@ async function atualizarKpis() {
     el('cont-pendente').textContent = k.pendentes ?? 0;
     el('cont-associado').textContent = k.associados ?? 0;
     el('cont-recusado').textContent = k.recusados ?? 0;
+    if (el('cont-descartado')) el('cont-descartado').textContent = k.descartados ?? 0;
 
     document.title = k.pendentes
       ? `(${k.pendentes}) ${estado.tipo} · Painel de associação`
@@ -221,8 +229,28 @@ function ligarOrdenacao() {
         estado.ordem = 'asc';
       }
       estado.pagina = 1;
+      pintarOrdenacao();
       carregarTabela();
     });
+  });
+  pintarOrdenacao();
+}
+
+/**
+ * Mostra qual coluna está ordenando e em que sentido.
+ *
+ * Sem isso, a tabela abre ordenada por vencimento e ninguém sabe por quê —
+ * parece aleatório. Uma seta resolve.
+ */
+function pintarOrdenacao() {
+  document.querySelectorAll('th[data-ordenar]').forEach((th) => {
+    const ativa = th.dataset.ordenar === estado.ordenarPor;
+    th.classList.toggle('ordenando', ativa);
+    th.classList.toggle('ordenando--desc', ativa && estado.ordem === 'desc');
+    th.setAttribute(
+      'aria-sort',
+      ativa ? (estado.ordem === 'asc' ? 'ascending' : 'descending') : 'none'
+    );
   });
 }
 
@@ -347,7 +375,9 @@ function celulaDeRevisao(b) {
 
 function montarLinha(b) {
   let seloVencimento = '';
-  if (b.vencimento && b.status !== 'associado') {
+  if (!b.vencimento) {
+    seloVencimento = '<span class="selo selo--sem-data">Não lido</span>';
+  } else if (b.status !== 'associado') {
     if (b.situacao_vencimento === 'vencido') {
       seloVencimento = '<span class="selo selo--vencido">Vencido</span>';
     } else if (b.situacao_vencimento === 'vence_em_breve') {
@@ -363,8 +393,22 @@ function montarLinha(b) {
         }</span>`
       : '';
 
+  // O botão de descartar só é desenhado para quem tem a permissão.
+  const botaoDescartar = sessao.podeDescartar()
+    ? `<button class="acao-icone acao-icone--perigo" data-acao="descartar" data-id="${b.id}"
+               title="Descartar: tirar da fila por engano">${ICONES.x}</button>`
+    : '';
+
   const acoes =
-    b.status === 'associado'
+    b.status === 'descartado'
+      ? `<button class="acao-icone" data-acao="detalhes" data-id="${b.id}" title="Ver detalhes">${ICONES.olho}</button>
+         ${
+           sessao.podeDescartar()
+             ? `<button class="acao-icone" data-acao="restaurar" data-id="${b.id}"
+                        title="Desfazer o descarte">${ICONES.desfazer}</button>`
+             : ''
+         }`
+      : b.status === 'associado'
       ? `<button class="acao-icone" data-acao="detalhes" data-id="${b.id}" title="Ver detalhes">${ICONES.olho}</button>
          <button class="acao-icone" data-acao="reabrir" data-id="${b.id}" title="Desfazer associação">${ICONES.desfazer}</button>`
       : `<button class="acao-icone" data-acao="completar" data-id="${b.id}"
@@ -372,7 +416,8 @@ function montarLinha(b) {
          <button class="acao-icone acao-icone--ok" data-acao="associar" data-id="${b.id}"
                  title="Associar">${ICONES.checkCirculo}</button>
          <button class="acao-icone" data-acao="detalhes" data-id="${b.id}" title="Ver detalhes">${ICONES.olho}</button>
-         <button class="acao-icone" data-acao="recusar" data-id="${b.id}" title="Recusar e devolver">${ICONES.xCirculo}</button>`;
+         <button class="acao-icone" data-acao="recusar" data-id="${b.id}" title="Recusar e devolver">${ICONES.xCirculo}</button>
+         ${botaoDescartar}`;
 
   // A coluna CC mostra a conta e, embaixo, o banco — porque uma empresa tem
   // várias contas e o número sozinho não diz de qual banco é.
@@ -433,7 +478,7 @@ function montarLinha(b) {
 
     <td>
       <div class="celula-duas-linhas" style="min-width:110px;">
-        <span class="data-simples">${fmtData(b.vencimento)}</span>
+        <span class="data-simples">${b.vencimento ? fmtData(b.vencimento) : '—'}</span>
         ${seloVencimento}
       </div>
     </td>
@@ -452,7 +497,9 @@ function montarLinha(b) {
     <td>${
       b.associado_por_nome
         ? escapar(b.associado_por_nome)
-        : `<span class="selo selo--${b.status}">${{ pendente: 'Pendente', recusado: 'Recusado', associado: 'Associado' }[b.status]}</span>`
+        : `<span class="selo selo--${b.status}">${
+            { pendente: 'Pendente', recusado: 'Recusado', associado: 'Associado', descartado: 'Descartado' }[b.status] ?? b.status
+          }</span>`
     }</td>
 
     <td><div class="grupo-acoes">${acoes}</div></td>
@@ -465,8 +512,14 @@ function atualizarRodape(total, pagina, porPagina) {
   const ate = Math.min(pagina * porPagina, total);
   const nome = estado.tipo === 'NF' ? 'nota(s) fiscal(is)' : 'medição(ões)';
 
-  el('resumo-tabela').textContent = total
-    ? `Mostrando ${de}–${ate} de ${numero(total)} ${nome}.`
+  const semData = estado.linhas.filter((b) => !b.vencimento).length;
+
+  el('resumo-tabela').innerHTML = total
+    ? `Mostrando ${de}–${ate} de ${numero(total)} ${nome}, do que vence primeiro ao que vence depois.` +
+      (semData
+        ? ` <strong>${semData} sem vencimento lido</strong> — aparecem no topo porque
+            podem vencer a qualquer momento.`
+        : '')
     : `Nenhuma ${estado.tipo === 'NF' ? 'nota fiscal' : 'medição'} para mostrar.`;
   el('indicador-pagina').textContent = `${pagina} de ${ultima}`;
   el('pagina-anterior').disabled = pagina <= 1;
@@ -493,6 +546,8 @@ function ligarAcoesDaTabela() {
           case 'associar': return associar(boleto);
           case 'recusar': return recusar(boleto);
           case 'reabrir': return reabrir(boleto);
+          case 'descartar': return descartar(boleto);
+          case 'restaurar': return restaurar(boleto);
           case 'completar': return completar(boleto);
           case 'detalhes': return verDetalhes(boleto);
         }
@@ -609,6 +664,56 @@ async function reabrir(boleto) {
     await Promise.all([atualizarKpis(), carregarTabela({ silencioso: true })]);
   } catch (erro) {
     avisar(erro.message, 'erro', 8000);
+  }
+}
+
+/* ========================================================================== *
+ * Descartar e restaurar
+ * ========================================================================== *
+ * Descartar não apaga. O registro fica, com motivo e autor, e sai da fila e
+ * dos indicadores. O protocolo continua na sequência — quem procurar acha, e
+ * o histórico explica.
+ *
+ * O motivo é obrigatório de propósito: sem ele, o protocolo faltando na
+ * numeração seria um enigma para quem olhar depois.
+ */
+async function descartar(boleto) {
+  const motivo = await pedirTexto({
+    titulo: `Descartar o boleto #${boleto.numero_protocolo}?`,
+    rotulo: 'Por que este boleto está sendo descartado?',
+    dica:
+      'O registro não é apagado: ele sai da fila e dos indicadores, e este texto ' +
+      'fica no histórico. Quem enviou vai ver o motivo.',
+    textoConfirmar: 'Descartar',
+    perigo: true,
+  });
+  if (!motivo) return;
+
+  try {
+    await dados.descartarBoleto(boleto.id, motivo);
+    avisar(`Boleto #${boleto.numero_protocolo} descartado.`, 'ok');
+    await Promise.all([atualizarKpis(), carregarTabela({ silencioso: true })]);
+  } catch (erro) {
+    avisar(erro.message, 'erro', 9000);
+  }
+}
+
+async function restaurar(boleto) {
+  const ok = await confirmar({
+    titulo: `Trazer o #${boleto.numero_protocolo} de volta?`,
+    mensagem:
+      `Ele volta para a fila como pendente. O motivo do descarte ` +
+      `("${boleto.observacoes_operador ?? 'sem motivo'}") fica no histórico.`,
+    textoConfirmar: 'Restaurar',
+  });
+  if (!ok) return;
+
+  try {
+    await dados.restaurarBoleto(boleto.id);
+    avisar('Boleto restaurado. Está de volta na fila.', 'ok');
+    await Promise.all([atualizarKpis(), carregarTabela({ silencioso: true })]);
+  } catch (erro) {
+    avisar(erro.message, 'erro', 9000);
   }
 }
 
