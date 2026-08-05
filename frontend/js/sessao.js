@@ -80,6 +80,15 @@ export function ehOperador() {
   return papel() === 'admin';
 }
 
+/**
+ * Pode descartar boleto? Vem do banco, na coluna pode_descartar do perfil.
+ * A tela usa isto só para mostrar ou esconder o botão — quem realmente barra é
+ * a função descartar_boleto (db/11), que checa a mesma permissão no servidor.
+ */
+export function podeDescartar() {
+  return Boolean(sessao?.perfil?.pode_descartar);
+}
+
 export function souTerceirizado() {
   return ehTerceirizado(usuario()?.email ?? '');
 }
