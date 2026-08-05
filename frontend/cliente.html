@@ -85,6 +85,17 @@
                 <span class="campo__dica">É o e-mail da sua conta. Usamos para avisar do andamento.</span>
               </div>
 
+              <div class="campo">
+                <label class="campo__rotulo" for="departamento">
+                  Seu departamento <span class="obrigatorio">*</span>
+                </label>
+                <select id="departamento"><option value="">Carregando...</option></select>
+                <span class="campo__dica" id="dica-departamento">
+                  Fica guardado para os próximos envios.
+                </span>
+                <span class="campo__erro oculto" id="erro-departamento"></span>
+              </div>
+
               <div class="campo campo--largo">
                 <label class="campo__rotulo" for="observacoes">
                   Algo que a operação precisa saber? <span class="campo__opcional">opcional</span>

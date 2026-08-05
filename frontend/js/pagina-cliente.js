@@ -38,6 +38,12 @@ import { extrairDoArquivo } from './extrator.js';
 const el = (id) => document.getElementById(id);
 const MAXIMO = 20;
 
+// O departamento é da pessoa, não do boleto — ela não deveria escolher de novo
+// a cada envio. Guardamos a escolha no navegador. Não fica no perfil do banco
+// porque isso exigiria migração, e o ganho seria pequeno: quem troca de
+// departamento troca uma vez na vida.
+const CHAVE_DEPARTAMENTO = 'serena.departamento';
+
 /**
  * Cada arquivo solto vira um item desta lista. O `estado` de cada um conta a
  * história dele: aguardando, lendo, lido, repetido, enviado, falhou.
@@ -70,7 +76,7 @@ async function iniciar() {
   ligarUpload();
   ligarEnvio();
 
-  await carregarMeusBoletos();
+  await Promise.all([montarDepartamentos(), carregarMeusBoletos()]);
 
   // Ao vivo: se a operação associar ou recusar enquanto a página está aberta,
   // a lista se atualiza e um aviso aparece.
@@ -79,6 +85,38 @@ async function iniciar() {
       await carregarMeusBoletos({ avisarMudanca: true });
     }, 500)
   );
+}
+
+/**
+ * A lista de departamentos, com a última escolha da pessoa já selecionada.
+ */
+async function montarDepartamentos() {
+  const seletor = el('departamento');
+
+  try {
+    const lista = await dados.listarDepartamentos();
+    const guardado = localStorage.getItem(CHAVE_DEPARTAMENTO);
+
+    seletor.innerHTML =
+      '<option value="">Selecione</option>' +
+      lista
+        .map(
+          (d) =>
+            `<option value="${escapar(d)}" ${d === guardado ? 'selected' : ''}>${escapar(d)}</option>`
+        )
+        .join('');
+
+    el('dica-departamento').textContent = guardado
+      ? 'Guardado do seu último envio. Troque se mudou.'
+      : 'Fica guardado para os próximos envios.';
+
+    seletor.addEventListener('change', () => {
+      if (seletor.value) localStorage.setItem(CHAVE_DEPARTAMENTO, seletor.value);
+    });
+  } catch (erro) {
+    seletor.innerHTML = '<option value="">Não consegui carregar</option>';
+    console.warn(erro);
+  }
 }
 
 /* ========================================================================== *
@@ -456,8 +494,10 @@ function ligarEnvio() {
 
     const nome = el('nome').value.trim();
     const sobrenome = el('sobrenome').value.trim();
+    const departamento = el('departamento').value;
     if (!nome) return marcarErro('nome', 'Preencha seu nome.');
     if (!sobrenome) return marcarErro('sobrenome', 'Preencha seu sobrenome.');
+    if (!departamento) return marcarErro('departamento', 'Escolha o seu departamento.');
 
     const fila = itens.filter(podeEnviar);
     if (!fila.length) return avisar('Nenhum arquivo pronto para enviar.', 'atencao');
@@ -481,7 +521,7 @@ function ligarEnvio() {
 
       try {
         const criado = await dados.criarBoleto(
-          montarRegistro(item, { tipo, nome, sobrenome, observacoes }),
+          montarRegistro(item, { tipo, nome, sobrenome, departamento, observacoes }),
           item.arquivo
         );
         item.estado = 'enviado';
@@ -518,7 +558,7 @@ function ligarEnvio() {
  * O registro que vai para o banco. Campos não lidos vão como null de propósito
  * — o banco aceita (db/10) e a operação completa depois.
  */
-function montarRegistro(item, { tipo, nome, sobrenome, observacoes }) {
+function montarRegistro(item, { tipo, nome, sobrenome, departamento, observacoes }) {
   const l = item.lido ?? {};
   const empresa = item.empresa?.empresa ?? null;
 
@@ -549,7 +589,7 @@ function montarRegistro(item, { tipo, nome, sobrenome, observacoes }) {
     extracao_metodo: l.metodo ?? 'nenhum',
     extracao_avisos: l.avisos ?? [],
 
-    departamento: null,
+    departamento,
     observacoes_cliente: observacoes,
   };
 }
@@ -688,7 +728,7 @@ function desenharNovidades(novidades, comAviso) {
   }
 
   const associados = novidades.filter((b) => b.status === 'associado');
-  const recusados = novidades.filter((b) => b.status === 'recusado');
+  const recusados = novidades.filter((b) => ['recusado', 'descartado'].includes(b.status));
 
   area.innerHTML = `
     <div class="aviso aviso--${recusados.length ? 'atencao' : 'ok'} aviso--novidade">
@@ -749,10 +789,11 @@ function linhaMeuBoleto(b) {
       pendente: '<span class="selo selo--pendente">Aguardando operação</span>',
       associado: '<span class="selo selo--associado">Associado</span>',
       recusado: '<span class="selo selo--recusado">Recusado</span>',
+      descartado: '<span class="selo selo--descartado">Descartado</span>',
     }[b.status] ?? '';
 
   const motivo =
-    b.status === 'recusado' && b.observacoes_operador
+    ['recusado', 'descartado'].includes(b.status) && b.observacoes_operador
       ? `<button type="button" class="acao-icone" data-motivo="${escapar(b.observacoes_operador)}"
                  title="Ver o motivo">${ICONES.info}</button>`
       : '';
