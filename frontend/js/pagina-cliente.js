@@ -1,18 +1,27 @@
 /**
- * pagina-cliente.js — O assistente de envio de boleto, passo a passo.
- * ---------------------------------------------------------------------------
- * POR QUE UMA ETAPA DE CADA VEZ
- * -----------------------------
- * Antes, as sete seções apareciam todas juntas. Um formulário longo assusta:
- * a pessoa bate o olho, vê vinte campos e desanima antes de começar.
+ * pagina-cliente.js — Anexar boletos e confirmar. Nada mais.
+ * ===========================================================================
+ * A MUDANÇA DE RESPONSABILIDADE
+ * ===========================================================================
+ * A versão anterior tinha sete etapas e pedia para a pessoa conferir campo por
+ * campo. Estava errado por dois motivos.
  *
- * Agora só a etapa atual fica aberta. As anteriores viram uma linha resumida
- * (com botão "Editar", porque ninguém deve ficar preso), e as seguintes ficam
- * acinzentadas — visíveis, para dar noção do tamanho da tarefa, mas fechadas.
+ * O primeiro é aritmético: quinze boletos vezes oito etapas dá cento e vinte
+ * interações, e em seis delas a pessoa só confirmava algo que o sistema já
+ * havia lido do arquivo.
  *
- * E tem um ganho que só aparece na prática: como o arquivo é a PRIMEIRA etapa,
- * quando a pessoa chega nas etapas 3, 4, 5 e 6 elas já estão preenchidas pela
- * leitura do boleto. O trabalho vira conferir, não digitar.
+ * O segundo é de papéis, e é o que importa: quem confere boleto é a operação,
+ * não quem envia. Pedir confirmação a quem não tem como conferir produz um
+ * "sim" automático — pior que não perguntar, porque cria a ilusão de que
+ * alguém validou.
+ *
+ * Então agora: a pessoa solta os arquivos, diz se é NF ou MD, confirma o nome,
+ * e envia. O que o leitor conseguir extrair vai junto como rascunho, marcado
+ * para a operação revisar. O que ele não conseguir fica em branco — e o boleto
+ * entra assim mesmo, porque é justamente esse que mais precisa de olho humano.
+ *
+ * A trava não desapareceu: mudou de lugar. O banco recusa ASSOCIAR um boleto
+ * incompleto (db/10). A porta de entrada é larga; a de saída é estreita.
  */
 
 import { CONFIG } from './config.js';
@@ -21,33 +30,20 @@ import * as sessao from './sessao.js';
 import { montarTopo, montarRodape, ligarBotaoDemo } from './layout.js';
 import {
   ICONES, avisar, escapar, moeda, data as fmtData, dataHora, tamanhoArquivo,
-  cnpj as fmtCnpj, pintarIcones, mascararCNPJ, cnpjValido, copiar, comBotaoOcupado,
-  aguardarPausa,
+  cnpj as fmtCnpj, pintarIcones, copiar, comBotaoOcupado, aguardarPausa,
 } from './ui.js';
-import {
-  carregarContas, empresaPorDocumento, acharEmpresa, contasDaEmpresa, buscarEmpresas,
-  criarVerificadorDeEmpresa, preencherSelectContas, rotuloDaConta,
-  formatarDocumento, totais as totaisDeContas,
-} from './contas.js';
-import { extrairDoArquivo, interpretarDigitado } from './extrator.js';
+import { carregarContas, acharEmpresa, criarVerificadorDeEmpresa } from './contas.js';
+import { extrairDoArquivo } from './extrator.js';
 
 const el = (id) => document.getElementById(id);
-const ULTIMA_ETAPA = 8;
+const MAXIMO = 20;
 
-const TITULOS = {
-  1: 'Boleto', 2: 'Solicitante', 3: 'Documento', 4: 'Empresa',
-  5: 'Fornecedor', 6: 'Valores', 7: 'Classificação', 8: 'Enviar',
-};
-
-const estado = {
-  etapa: 1,
-  concluidas: new Set(),
-  arquivo: null,
-  extracao: null,
-  empresa: null,
-  conta: null,
-  enviando: false,
-};
+/**
+ * Cada arquivo solto vira um item desta lista. O `estado` de cada um conta a
+ * história dele: aguardando, lendo, lido, repetido, enviado, falhou.
+ */
+const itens = [];
+let enviando = false;
 
 /* ========================================================================== *
  * Início
@@ -71,346 +67,22 @@ async function iniciar() {
   el('nome').value = p?.nome ?? '';
   el('sobrenome').value = p?.sobrenome ?? '';
 
-  montarTrilha();
-  ligarNavegacao();
   ligarUpload();
-  ligarCamposDependentes();
-  ligarBuscaDeEmpresa();
   ligarEnvio();
 
-  await Promise.all([montarDepartamentos(), avisarTotais()]);
   await carregarMeusBoletos();
-  dados.assinarMudancas(aguardarPausa(() => carregarMeusBoletos(), 400));
-}
 
-async function avisarTotais() {
-  try {
-    const t = await totaisDeContas();
-    el('dica-conta').textContent =
-      `${t.empresas} empresas e ${t.contasAtivas} contas ativas cadastradas.`;
-  } catch (erro) {
-    el('dica-conta').textContent = '';
-    console.warn(erro);
-  }
-}
-
-async function montarDepartamentos() {
-  const lista = await dados.listarDepartamentos().catch(() => []);
-  el('departamento').innerHTML =
-    '<option value="">Selecione o departamento</option>' +
-    lista.map((d) => `<option value="${escapar(d)}">${escapar(d)}</option>`).join('');
+  // Ao vivo: se a operação associar ou recusar enquanto a página está aberta,
+  // a lista se atualiza e um aviso aparece.
+  dados.assinarMudancas(
+    aguardarPausa(async () => {
+      await carregarMeusBoletos({ avisarMudanca: true });
+    }, 500)
+  );
 }
 
 /* ========================================================================== *
- * A trilha de etapas
- * ========================================================================== */
-function montarTrilha() {
-  el('trilha').innerHTML = Object.entries(TITULOS)
-    .map(
-      ([n, titulo]) => `
-      <li class="trilha__item" data-trilha="${n}">
-        <button type="button" class="trilha__botao">
-          <span class="trilha__bolinha">${n}</span>
-          <span class="trilha__rotulo">${escapar(titulo)}</span>
-        </button>
-      </li>`
-    )
-    .join('');
-
-  el('trilha').querySelectorAll('[data-trilha]').forEach((item) => {
-    item.querySelector('.trilha__botao').addEventListener('click', () => {
-      const n = Number(item.dataset.trilha);
-      // Só dá para pular para uma etapa já concluída, ou para a atual.
-      if (estado.concluidas.has(n) || n === estado.etapa) irParaEtapa(n);
-    });
-  });
-
-  pintarTrilha();
-}
-
-function pintarTrilha() {
-  el('trilha').querySelectorAll('[data-trilha]').forEach((item) => {
-    const n = Number(item.dataset.trilha);
-    item.classList.toggle('trilha__item--ativo', n === estado.etapa);
-    item.classList.toggle('trilha__item--feito', estado.concluidas.has(n));
-    const bolinha = item.querySelector('.trilha__bolinha');
-    bolinha.innerHTML = estado.concluidas.has(n) ? ICONES.check : String(n);
-    item.querySelector('.trilha__botao').disabled =
-      !estado.concluidas.has(n) && n !== estado.etapa;
-  });
-}
-
-function secao(n) {
-  return document.querySelector(`.etapa[data-etapa="${n}"]`);
-}
-
-function irParaEtapa(n) {
-  estado.etapa = n;
-
-  document.querySelectorAll('.etapa').forEach((s) => {
-    const numero = Number(s.dataset.etapa);
-    const feita = estado.concluidas.has(numero);
-    const ativa = numero === n;
-
-    s.classList.toggle('etapa--ativa', ativa);
-    s.classList.toggle('etapa--concluida', feita && !ativa);
-    s.classList.toggle('etapa--bloqueada', !ativa && !feita);
-
-    // A linha de resumo só aparece quando a etapa está fechada e pronta.
-    const resumo = s.querySelector('.etapa__resumo');
-    const editar = s.querySelector('.etapa__editar');
-    const mostrarResumo = feita && !ativa;
-    if (resumo) {
-      resumo.hidden = !mostrarResumo;
-      if (mostrarResumo) resumo.innerHTML = resumoDaEtapa(numero);
-    }
-    if (editar) editar.hidden = !mostrarResumo;
-  });
-
-  if (n === ULTIMA_ETAPA) desenharRevisao();
-
-  pintarTrilha();
-
-  // Com uma etapa por vez, o painel troca no mesmo lugar. Então o certo é
-  // subir para a trilha — não rolar até a seção, que já está ali.
-  const trilha = el('trilha');
-  if (trilha) {
-    const y = trilha.getBoundingClientRect().top + window.scrollY - 24;
-    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-  }
-
-  // Foca o primeiro campo, para quem usa teclado não precisar caçar.
-  const alvo = secao(n);
-  if (alvo) {
-    setTimeout(() => {
-      alvo.querySelector('input:not([readonly]):not([type=file]), select, textarea')?.focus({
-        preventScroll: true,
-      });
-    }, 220);
-  }
-}
-
-function resumoDaEtapa(n) {
-  const pedaco = (t) => `<span>${escapar(t)}</span>`;
-  switch (n) {
-    case 1:
-      return estado.arquivo
-        ? pedaco(`${estado.arquivo.name} · ${tamanhoArquivo(estado.arquivo.size)}`)
-        : '';
-    case 2:
-      return pedaco(`${el('nome').value} ${el('sobrenome').value}`.trim());
-    case 3: {
-      const tipo = el('tipo-documento').value;
-      const numero = el('numero-documento').value;
-      return pedaco(`${tipo}-${numero}`);
-    }
-    case 4:
-      return estado.empresa
-        ? pedaco(`${estado.empresa.razaoSocial} · conta ${el('conta').value}`)
-        : '';
-    case 5:
-      return pedaco(el('fornecedor').value);
-    case 6: {
-      const v = valorParaNumero(el('valor').value);
-      return pedaco(`${v != null ? moeda(v) : '—'} · vence ${fmtData(el('vencimento').value)}`);
-    }
-    case 7:
-      return pedaco(el('departamento').value);
-    default:
-      return '';
-  }
-}
-
-function ligarNavegacao() {
-  document.querySelectorAll('[data-avancar]').forEach((botao) => {
-    botao.addEventListener('click', () => {
-      const n = Number(botao.dataset.avancar);
-      if (!validarEtapa(n)) return;
-      estado.concluidas.add(n);
-      irParaEtapa(Math.min(n + 1, ULTIMA_ETAPA));
-    });
-  });
-
-  document.querySelectorAll('[data-voltar]').forEach((botao) => {
-    botao.addEventListener('click', () => {
-      irParaEtapa(Math.max(1, Number(botao.dataset.voltar) - 1));
-    });
-  });
-
-  document.querySelectorAll('.etapa__editar').forEach((botao) => {
-    botao.addEventListener('click', () => {
-      irParaEtapa(Number(botao.closest('.etapa').dataset.etapa));
-    });
-  });
-}
-
-/* ========================================================================== *
- * Validação por etapa
- * ========================================================================== */
-function limparErrosDaEtapa(n) {
-  secao(n)?.querySelectorAll('.campo__erro').forEach((e) => e.classList.add('oculto'));
-  secao(n)?.querySelectorAll('[aria-invalid]').forEach((e) => e.removeAttribute('aria-invalid'));
-}
-
-function marcarErro(campoId, mensagem) {
-  const erro = el(`erro-${campoId}`);
-  if (erro) {
-    erro.innerHTML = `${ICONES.alerta}${escapar(mensagem)}`;
-    erro.classList.remove('oculto');
-  }
-  const campo = el(campoId);
-  campo?.setAttribute('aria-invalid', 'true');
-  campo?.focus();
-}
-
-function valorParaNumero(texto) {
-  const limpo = String(texto ?? '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
-  const n = Number(limpo);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-function validarEtapa(n) {
-  limparErrosDaEtapa(n);
-
-  switch (n) {
-    case 1:
-      if (!estado.arquivo) {
-        el('erro-arquivo').innerHTML = `${ICONES.alerta}Anexe o arquivo do boleto.`;
-        el('erro-arquivo').classList.remove('oculto');
-        return false;
-      }
-      return true;
-
-    case 2:
-      if (!el('nome').value.trim()) return marcarErro('nome', 'Preencha seu nome.'), false;
-      if (!el('sobrenome').value.trim()) return marcarErro('sobrenome', 'Preencha seu sobrenome.'), false;
-      return true;
-
-    case 3: {
-      if (!el('tipo-documento').value) {
-        return marcarErro('tipo-documento', 'Escolha entre NF e MD.'), false;
-      }
-      const numero = el('numero-documento').value.trim();
-      if (!numero) return marcarErro('numero-documento', 'Informe o número do documento.'), false;
-      if (/^(req|rc|sc)/i.test(numero)) {
-        return marcarErro('numero-documento',
-          'Isso parece um número de requisição. Use o número da NF ou da MD.'), false;
-      }
-      const regularizado = document.querySelector('input[name=regularizado]:checked')?.value;
-      if (!regularizado) return marcarErro('regularizado', 'Responda sim ou não.'), false;
-      if (regularizado === 'nao') {
-        marcarErro('regularizado',
-          el('tipo-documento').value === 'MD'
-            ? 'Regularize a aprovação e a forma de pagamento da MD antes de enviar.'
-            : 'Regularize a escrituração e a forma de pagamento da NF antes de enviar.');
-        return false;
-      }
-      return true;
-    }
-
-    case 4:
-      if (!estado.empresa) {
-        return marcarErro('busca-empresa', 'Escolha a unidade de negócio.'), false;
-      }
-      if (!el('conta').value) {
-        return marcarErro('conta', 'Escolha a conta.'), false;
-      }
-      return true;
-
-    case 5: {
-      if (!el('fornecedor').value.trim()) {
-        return marcarErro('fornecedor', 'Informe a razão social do fornecedor.'), false;
-      }
-      const doc = el('fornecedor-cnpj').value.trim();
-      if (doc && !cnpjValido(doc)) {
-        return marcarErro('fornecedor-cnpj', 'Este CNPJ não passa na verificação.'), false;
-      }
-      return true;
-    }
-
-    case 6:
-      if (valorParaNumero(el('valor').value) == null) {
-        return marcarErro('valor', 'Informe o valor do boleto.'), false;
-      }
-      if (!el('vencimento').value) {
-        return marcarErro('vencimento', 'Informe o vencimento.'), false;
-      }
-      return true;
-
-    case 7:
-      if (!el('departamento').value) {
-        return marcarErro('departamento', 'Escolha o departamento.'), false;
-      }
-      return true;
-
-    default:
-      return true;
-  }
-}
-
-/* ========================================================================== *
- * Campos que reagem a outros
- * ========================================================================== */
-function ligarCamposDependentes() {
-  el('tipo-documento').addEventListener('change', () => {
-    const tipo = el('tipo-documento').value;
-    const rotulo = el('rotulo-regularizado');
-    const dica = el('dica-regularizado');
-    if (tipo === 'NF') {
-      rotulo.innerHTML = 'A NF está escriturada e com a forma de pagamento atualizada? <span class="obrigatorio">*</span>';
-      dica.textContent = 'Sem escrituração e forma de pagamento em ordem, o pagamento não sai.';
-    } else if (tipo === 'MD') {
-      rotulo.innerHTML = 'A MD está aprovada e com a forma de pagamento atualizada? <span class="obrigatorio">*</span>';
-      dica.textContent = 'Sem aprovação e forma de pagamento em ordem, o pagamento não sai.';
-    } else {
-      rotulo.innerHTML = 'O documento está regularizado? <span class="obrigatorio">*</span>';
-      dica.textContent = 'Escolha o tipo acima para ver o que precisa estar em ordem.';
-    }
-  });
-
-  el('fornecedor-cnpj').addEventListener('input', (ev) => {
-    ev.target.value = mascararCNPJ(ev.target.value);
-  });
-
-  el('valor').addEventListener('input', (ev) => {
-    ev.target.value = ev.target.value.replace(/[^\d,.]/g, '');
-  });
-
-  // Colar a linha digitável na mão recalcula valor e vencimento.
-  el('linha-digitavel').addEventListener('input', () => {
-    const digitos = el('linha-digitavel').value.replace(/\D+/g, '');
-    if (digitos.length < 44) return;
-
-    const lido = interpretarDigitado(digitos);
-    if (!lido.codigoBarras) return;
-
-    estado.extracao = {
-      ...(estado.extracao ?? {}),
-      codigoBarras: lido.codigoBarras,
-      linhaDigitavel: lido.linhaDigitavel,
-      linhaDigitavelFormatada: lido.linhaDigitavelFormatada,
-      banco: lido.banco,
-      bancoNome: lido.bancoNome,
-      valor: lido.valor ?? estado.extracao?.valor ?? null,
-      vencimento: lido.vencimento ?? estado.extracao?.vencimento ?? null,
-      confianca: lido.dvValido ? 'alta' : 'media',
-      metodo: 'digitado',
-      avisos: lido.avisos,
-    };
-
-    if (lido.valor) el('valor').value = lido.valor.toFixed(2).replace('.', ',');
-    if (lido.vencimento) el('vencimento').value = lido.vencimento;
-
-    el('dica-codigo').textContent = lido.dvValido
-      ? 'Código conferido: o dígito verificador fecha.'
-      : 'Atenção: o dígito verificador não fechou. Confira os números.';
-
-    desenharPainelExtracao();
-  });
-}
-
-/* ========================================================================== *
- * Upload e leitura
+ * Receber os arquivos
  * ========================================================================== */
 function ligarUpload() {
   const area = el('area-upload');
@@ -437,595 +109,517 @@ function ligarUpload() {
     })
   );
 
-  area.addEventListener('drop', (ev) => {
-    const arquivo = ev.dataTransfer?.files?.[0];
-    if (arquivo) receberArquivo(arquivo);
+  area.addEventListener('drop', (ev) => receberArquivos(ev.dataTransfer?.files));
+  campo.addEventListener('change', () => {
+    receberArquivos(campo.files);
+    campo.value = ''; // permite soltar o mesmo arquivo de novo depois
   });
 
-  campo.addEventListener('change', () => {
-    const arquivo = campo.files?.[0];
-    if (arquivo) receberArquivo(arquivo);
+  el('botao-limpar').addEventListener('click', () => {
+    itens.length = 0;
+    el('resultado-envio').innerHTML = '';
+    desenharLista();
+    desenharResumo();
+    avisar('Limpo. Pode começar de novo.', 'info', 2000);
   });
 }
 
-function validarArquivo(arquivo) {
+function problemaNoArquivo(arquivo) {
   const limite = CONFIG.TAMANHO_MAX_ARQUIVO_MB * 1024 * 1024;
   if (arquivo.size > limite) {
-    return `O arquivo tem ${tamanhoArquivo(arquivo.size)}. O limite é ${CONFIG.TAMANHO_MAX_ARQUIVO_MB} MB.`;
+    return `tem ${tamanhoArquivo(arquivo.size)}, acima do limite de ${CONFIG.TAMANHO_MAX_ARQUIVO_MB} MB`;
   }
   const tipoOk =
     CONFIG.TIPOS_ACEITOS.includes(arquivo.type) || /\.(pdf|png|jpe?g|webp)$/i.test(arquivo.name);
-  return tipoOk ? null : 'Envie um arquivo PDF, PNG ou JPG.';
+  return tipoOk ? null : 'não é PDF, PNG nem JPG';
 }
 
-async function receberArquivo(arquivo) {
-  const problema = validarArquivo(arquivo);
+async function receberArquivos(listaBruta) {
+  const novos = Array.from(listaBruta ?? []);
+  if (!novos.length) return;
+
   const erro = el('erro-arquivo');
-  if (problema) {
-    erro.innerHTML = `${ICONES.alerta}${escapar(problema)}`;
+  erro.classList.add('oculto');
+
+  const vaga = MAXIMO - itens.length;
+  if (vaga <= 0) {
+    erro.innerHTML = `${ICONES.alerta}Você já tem ${MAXIMO} arquivos, que é o limite de um envio.`;
     erro.classList.remove('oculto');
     return;
   }
-  erro.classList.add('oculto');
 
-  estado.arquivo = arquivo;
-  mostrarArquivoEscolhido(arquivo);
+  const aceitos = novos.slice(0, vaga);
+  if (novos.length > vaga) {
+    erro.innerHTML =
+      `${ICONES.alerta}Peguei ${vaga} de ${novos.length} arquivos — o limite é ${MAXIMO} por envio. ` +
+      'Envie estes e depois solte o resto.';
+    erro.classList.remove('oculto');
+  }
 
-  el('painel-extracao').innerHTML = `
-    <div class="painel-extracao">
-      <div class="painel-extracao__topo">
-        ${ICONES.atualizar}<span id="andamento-extracao">Abrindo o arquivo...</span>
-      </div>
-      <div class="painel-extracao__corpo">
-        <div class="esqueleto" style="width:70%"></div>
-        <div class="esqueleto" style="width:50%"></div>
-      </div>
-    </div>`;
-
-  try {
-    // Passamos a lista das 213 empresas para o extrator conseguir separar
-    // "nosso CNPJ" de "CNPJ do fornecedor". Ver boleto-campos.js.
-    await carregarContas();
-    const ehNossaEmpresa = await criarVerificadorDeEmpresa();
-
-    const lido = await extrairDoArquivo(
-      arquivo,
-      (mensagem) => {
-        const alvo = el('andamento-extracao');
-        if (alvo) alvo.textContent = mensagem;
-      },
-      { ehNossaEmpresa, tipoDocumento: el('tipo-documento').value || null }
+  for (const arquivo of aceitos) {
+    const problema = problemaNoArquivo(arquivo);
+    // Arquivo repetido no mesmo lote: fácil de acontecer arrastando duas vezes.
+    const jaEsta = itens.some(
+      (i) => i.arquivo.name === arquivo.name && i.arquivo.size === arquivo.size
     );
 
-    estado.extracao = lido;
-    await preencherComOLido(lido);
-    desenharPainelExtracao();
-
-    const quantos = contarPreenchidos(lido);
-    if (lido.confianca === 'alta') {
-      avisar(`Boleto lido: ${quantos} campo(s) preenchido(s). Confira e siga.`, 'ok', 5000);
-    } else if (quantos > 0) {
-      avisar(`Leitura parcial: ${quantos} campo(s) preenchido(s). Confira os marcados.`, 'atencao', 6500);
-    } else {
-      avisar('Não consegui ler este arquivo. Você vai preencher à mão.', 'atencao', 7000);
-    }
-  } catch (erroLeitura) {
-    console.error(erroLeitura);
-    estado.extracao = null;
-    el('painel-extracao').innerHTML = `
-      <div class="aviso aviso--atencao" style="margin-top:14px;">
-        ${ICONES.alerta}
-        <div>
-          <span class="aviso__titulo">Não consegui ler o arquivo automaticamente</span>
-          ${escapar(erroLeitura.message)}<br />
-          Sem problema: os campos das próximas etapas ficam abertos para você preencher.
-        </div>
-      </div>`;
-  }
-}
-
-function contarPreenchidos(lido) {
-  return [
-    lido.valor, lido.vencimento, lido.codigoBarras, lido.numeroDocumento,
-    lido.unidadeCnpj, lido.fornecedorCnpj, lido.fornecedorRazaoSocial,
-  ].filter(Boolean).length;
-}
-
-function mostrarSelo(id, mostrar) {
-  el(id)?.classList.toggle('oculto', !mostrar);
-}
-
-/**
- * Espalha o que foi lido pelas etapas 3, 4, 5 e 6.
- * Cada campo preenchido automaticamente ganha um selo, para a pessoa saber
- * o que veio do arquivo e o que ela mesma digitou.
- */
-async function preencherComOLido(lido) {
-  // ---------------------------------------------------------- ETAPA 3
-  if (lido.numeroDocumento) {
-    el('numero-documento').value = lido.numeroDocumento;
-    mostrarSelo('selo-numero', true);
-  }
-  if (lido.numeroDocumentoTipoSugerido && !el('tipo-documento').value) {
-    el('tipo-documento').value = lido.numeroDocumentoTipoSugerido;
-    el('tipo-documento').dispatchEvent(new Event('change'));
-  }
-
-  // Mais de um candidato: mostramos fichas para a pessoa escolher em um clique
-  // em vez de apagar e digitar.
-  const candidatos = (lido.numeroDocumentoCandidatos ?? []).slice(0, 4);
-  if (candidatos.length > 1) {
-    el('bloco-candidatos-numero').hidden = false;
-    el('candidatos-numero').innerHTML = candidatos
-      .map(
-        (c, i) => `
-        <button type="button" class="ficha-escolha ${i === 0 ? 'ficha-escolha--ativa' : ''}"
-                data-numero="${escapar(c.numero)}" title="${escapar(c.contexto)}">
-          ${escapar(c.numero)}
-          ${c.tipoSugerido ? `<small>${c.tipoSugerido}</small>` : ''}
-        </button>`
-      )
-      .join('');
-
-    el('candidatos-numero').querySelectorAll('[data-numero]').forEach((botao) => {
-      botao.addEventListener('click', () => {
-        el('numero-documento').value = botao.dataset.numero;
-        el('candidatos-numero')
-          .querySelectorAll('.ficha-escolha')
-          .forEach((b) => b.classList.toggle('ficha-escolha--ativa', b === botao));
-      });
+    itens.push({
+      id: `item-${Math.random().toString(36).slice(2, 10)}`,
+      arquivo,
+      estado: problema ? 'invalido' : jaEsta ? 'duplicado_no_lote' : 'aguardando',
+      motivo: problema ?? (jaEsta ? 'este arquivo já está na lista' : null),
+      progresso: null,
+      lido: null,
+      empresa: null,
+      anteriores: [],
     });
-  } else {
-    el('bloco-candidatos-numero').hidden = true;
   }
 
-  // ---------------------------------------------------------- ETAPA 4
-  if (lido.unidadeCnpj) {
-    // acharEmpresa também casa pela RAIZ do CNPJ: o boleto costuma vir contra
-    // uma filial (0002, 0003...) enquanto a planilha cadastra a matriz (0001).
-    const achado = await acharEmpresa(lido.unidadeCnpj);
-    if (achado) {
-      await escolherEmpresa(achado.empresa, {
-        lidaDoBoleto: true,
-        porRaiz: achado.porRaiz,
-        filialDoBoleto: achado.filialDoBoleto,
-        cnpjDoBoleto: lido.unidadeCnpj,
-      });
-    }
-  }
-
-  // ---------------------------------------------------------- ETAPA 5
-  if (lido.fornecedorRazaoSocial) {
-    el('fornecedor').value = lido.fornecedorRazaoSocial;
-    mostrarSelo('selo-fornecedor', true);
-  }
-  if (lido.fornecedorCnpj) {
-    el('fornecedor-cnpj').value = mascararCNPJ(lido.fornecedorCnpj);
-    const selo = el('selo-fornecedor-cnpj');
-    selo.classList.remove('oculto');
-    // Se o dígito verificador não fechou, o selo avisa em vez de tranquilizar.
-    if (lido.fornecedorCnpjConferido === false) {
-      selo.textContent = 'confira os dígitos';
-      selo.classList.add('selo-lido--atencao');
-    } else {
-      selo.textContent = 'lido do boleto';
-      selo.classList.remove('selo-lido--atencao');
-    }
-  }
-
-  // ---------------------------------------------------------- ETAPA 6
-  if (lido.valor != null) {
-    el('valor').value = Number(lido.valor).toFixed(2).replace('.', ',');
-    mostrarSelo('selo-valor', true);
-  }
-  if (lido.vencimento) {
-    el('vencimento').value = lido.vencimento;
-    mostrarSelo('selo-vencimento', true);
-  }
-  if (lido.linhaDigitavelFormatada || lido.codigoBarras) {
-    el('linha-digitavel').value = lido.linhaDigitavelFormatada ?? lido.codigoBarras;
-  }
+  desenharLista();
+  await lerPendentes();
 }
 
-function mostrarArquivoEscolhido(arquivo) {
-  const area = el('arquivo-escolhido');
-  area.classList.remove('oculto');
-  area.innerHTML = `
-    <div class="arquivo-escolhido">
-      <div class="arquivo-escolhido__icone" data-icone="documento"></div>
-      <div class="arquivo-escolhido__info">
-        <div class="arquivo-escolhido__nome">${escapar(arquivo.name)}</div>
-        <div class="arquivo-escolhido__meta">${tamanhoArquivo(arquivo.size)}</div>
-      </div>
-      <button type="button" class="acao-icone" id="botao-trocar-arquivo" title="Trocar arquivo">
-        ${ICONES.x}
-      </button>
-    </div>`;
-  pintarIcones(area);
-  el('area-upload').classList.add('oculto');
+/* ========================================================================== *
+ * Ler cada arquivo
+ * ========================================================================== */
+async function lerPendentes() {
+  await carregarContas();
+  const ehNossaEmpresa = await criarVerificadorDeEmpresa();
+  const tipo = tipoEscolhido();
 
-  el('botao-trocar-arquivo').addEventListener('click', () => {
-    estado.arquivo = null;
-    estado.extracao = null;
-    el('arquivo').value = '';
-    area.classList.add('oculto');
-    el('painel-extracao').innerHTML = '';
+  for (const item of itens) {
+    if (item.estado !== 'aguardando') continue;
+
+    item.estado = 'lendo';
+    item.progresso = 'abrindo o arquivo...';
+    desenharLista();
+
+    try {
+      const lido = await extrairDoArquivo(
+        item.arquivo,
+        (mensagem) => {
+          item.progresso = mensagem;
+          atualizarLinha(item);
+        },
+        { ehNossaEmpresa, tipoDocumento: tipo }
+      );
+
+      item.lido = lido;
+      item.empresa = lido.unidadeCnpj ? await acharEmpresa(lido.unidadeCnpj) : null;
+
+      // Este boleto já passou pelo portal?
+      if (lido.codigoBarras) {
+        item.anteriores = await dados.situacaoDoCodigo(lido.codigoBarras).catch(() => []);
+      }
+      const bloqueia = item.anteriores.some((b) => b.status !== 'recusado');
+
+      item.estado = bloqueia ? 'repetido' : lido.confianca === 'alta' ? 'lido' : 'lido_parcial';
+      item.motivo = bloqueia ? 'já está no portal' : null;
+    } catch (erro) {
+      console.error(erro);
+      item.estado = 'lido_parcial';
+      item.lido = null;
+      item.motivo = 'não consegui ler o arquivo — vai em branco mesmo';
+    }
+
+    item.progresso = null;
+    desenharLista();
+  }
+
+  desenharResumo();
+}
+
+function tipoEscolhido() {
+  return document.querySelector('input[name=tipo]:checked')?.value ?? 'NF';
+}
+
+/* ========================================================================== *
+ * Desenhar a lista
+ * ========================================================================== */
+const SELOS = {
+  aguardando: { icone: 'relogio', cor: 'neutro', texto: 'na fila' },
+  lendo: { icone: 'atualizar', cor: 'neutro', texto: 'lendo' },
+  lido: { icone: 'checkCirculo', cor: 'ok', texto: 'lido' },
+  lido_parcial: { icone: 'alerta', cor: 'atencao', texto: 'leitura parcial' },
+  repetido: { icone: 'xCirculo', cor: 'erro', texto: 'já está no portal' },
+  invalido: { icone: 'xCirculo', cor: 'erro', texto: 'arquivo inválido' },
+  duplicado_no_lote: { icone: 'xCirculo', cor: 'erro', texto: 'repetido na lista' },
+  enviando: { icone: 'atualizar', cor: 'neutro', texto: 'enviando' },
+  enviado: { icone: 'checkCirculo', cor: 'ok', texto: 'enviado' },
+  falhou: { icone: 'xCirculo', cor: 'erro', texto: 'não enviou' },
+};
+
+function podeEnviar(item) {
+  return ['lido', 'lido_parcial'].includes(item.estado);
+}
+
+function desenharLista() {
+  const area = el('lista-arquivos');
+  const bloco = el('bloco-dados');
+
+  if (!itens.length) {
+    area.innerHTML = '';
+    bloco.classList.add('oculto');
     el('area-upload').classList.remove('oculto');
-  });
-}
-
-function desenharPainelExtracao() {
-  const lido = estado.extracao;
-  const painel = el('painel-extracao');
-  if (!lido) {
-    painel.innerHTML = '';
     return;
   }
 
-  const rotulo = {
-    alta: 'Conferido pelo dígito verificador',
-    media: 'Confira estes dados',
-    baixa: 'Não deu para conferir',
-    manual: 'Preenchido à mão',
-  }[lido.confianca] ?? '';
+  bloco.classList.remove('oculto');
+  area.innerHTML = `
+    <div class="lista-boletos">${itens.map(linhaDoItem).join('')}</div>
+    ${
+      itens.length < MAXIMO
+        ? `<button type="button" class="botao botao--contorno botao--bloco" id="botao-mais-arquivos"
+                   style="margin-top:12px;">
+             ${ICONES.upload} Adicionar mais arquivos (${itens.length} de ${MAXIMO})
+           </button>`
+        : `<p class="campo__dica" style="text-align:center;margin-top:12px;">
+             Você atingiu o limite de ${MAXIMO} arquivos por envio.
+           </p>`
+    }`;
 
-  const item = (titulo, valor, calculado = false) => `
-    <div class="dado-lido">
-      <div class="dado-lido__rotulo">${escapar(titulo)}${calculado ? ' <small>calculado</small>' : ''}</div>
-      <div class="dado-lido__valor">${valor ?? '—'}</div>
+  el('area-upload').classList.add('oculto');
+  pintarIcones(area);
+
+  el('botao-mais-arquivos')?.addEventListener('click', () => el('arquivo').click());
+
+  area.querySelectorAll('[data-remover]').forEach((botao) => {
+    botao.addEventListener('click', () => {
+      const i = itens.findIndex((x) => x.id === botao.dataset.remover);
+      if (i >= 0) itens.splice(i, 1);
+      desenharLista();
+      desenharResumo();
+    });
+  });
+
+  area.querySelectorAll('[data-copiar]').forEach((botao) => {
+    botao.addEventListener('click', () => copiar(botao.dataset.copiar, 'Código copiado.'));
+  });
+
+  atualizarBotaoEnviar();
+}
+
+function linhaDoItem(item) {
+  const selo = SELOS[item.estado] ?? SELOS.aguardando;
+  const l = item.lido;
+
+  const dado = (rotulo, valor, destaque = false) => `
+    <div class="lista-boletos__dado${destaque ? ' lista-boletos__dado--destaque' : ''}">
+      <span class="lista-boletos__rotulo">${escapar(rotulo)}</span>
+      <span class="lista-boletos__valor">${valor ?? '<em>não lido</em>'}</span>
     </div>`;
 
-  const avisos = (lido.avisos ?? []).length
-    ? `<div class="aviso aviso--atencao" style="grid-column:1/-1;">
-         ${ICONES.alerta}
-         <div><span class="aviso__titulo">Atenção</span>
-           <ul>${lido.avisos.map((a) => `<li>${escapar(a)}</li>`).join('')}</ul></div>
+  const empresa = item.empresa
+    ? `${escapar(item.empresa.empresa.razaoSocial)}` +
+      (item.empresa.porRaiz
+        ? ` <small>(filial ${escapar(item.empresa.filialDoBoleto)})</small>`
+        : '')
+    : null;
+
+  const anteriores = item.anteriores.length
+    ? `<div class="lista-boletos__nota">
+         ${ICONES.info}
+         <div>${item.anteriores
+           .map((b) => {
+             const quem = b.sou_eu ? 'você' : b.quem_enviou ?? 'outra pessoa da equipe';
+             const sit =
+               { pendente: 'está na fila', associado: 'foi associado', recusado: 'foi recusado' }[
+                 b.status
+               ] ?? b.status;
+             const motivo = b.motivo_da_recusa ? ` — ${escapar(b.motivo_da_recusa)}` : '';
+             return `Protocolo #${b.numero_protocolo}, enviado por ${escapar(quem)}, ${sit}${motivo}.`;
+           })
+           .join('<br />')}</div>
        </div>`
     : '';
 
-  painel.innerHTML = `
-    <div class="painel-extracao">
-      <div class="painel-extracao__topo">
-        ${lido.confianca === 'alta' ? ICONES.checkCirculo : ICONES.alerta}
-        <span>O que eu li do arquivo</span>
-        <span class="selo-confianca selo-confianca--${lido.confianca}">${escapar(rotulo)}</span>
+  return `
+  <div class="lista-boletos__item lista-boletos__item--${selo.cor}" data-id="${item.id}">
+    <div class="lista-boletos__cabeca">
+      <span class="lista-boletos__selo lista-boletos__selo--${selo.cor}"
+            data-icone="${selo.icone}" title="${escapar(selo.texto)}"></span>
+      <div class="lista-boletos__nome">
+        ${escapar(item.arquivo.name)}
+        <small>${tamanhoArquivo(item.arquivo.size)}</small>
       </div>
-      <div class="painel-extracao__corpo">
-        ${item('Valor', lido.valor != null ? moeda(lido.valor) : null, true)}
-        ${item('Vencimento', lido.vencimento ? fmtData(lido.vencimento) : null, true)}
-        ${item('Nº do documento', lido.numeroDocumento ? escapar(lido.numeroDocumento) : null)}
-        ${item('Banco', escapar(lido.bancoNome ?? lido.banco ?? ''))}
-        ${item('Nossa empresa', lido.unidadeCnpj ? escapar(fmtCnpj(lido.unidadeCnpj)) : null)}
-        ${item('Fornecedor', lido.fornecedorCnpj ? escapar(fmtCnpj(lido.fornecedorCnpj)) : null)}
-        <div class="dado-lido" style="grid-column:1/-1;">
-          <div class="dado-lido__rotulo">Código de barras</div>
-          <div class="dado-lido__valor" style="display:flex;align-items:center;gap:8px;">
-            <span>${escapar(lido.codigoBarras ?? '—')}</span>
-            ${lido.codigoBarras ? `<button type="button" class="acao-icone" id="copiar-codigo" title="Copiar">${ICONES.copiar}</button>` : ''}
-          </div>
-        </div>
-        ${avisos}
+      <span class="lista-boletos__estado">${escapar(item.progresso ?? item.motivo ?? selo.texto)}</span>
+      ${
+        enviando
+          ? ''
+          : `<button type="button" class="acao-icone" data-remover="${item.id}"
+                     title="Tirar da lista">${ICONES.x}</button>`
+      }
+    </div>
+
+    ${
+      l
+        ? `<div class="lista-boletos__dados">
+             ${dado('Documento', l.numeroDocumento ? escapar(l.numeroDocumento) : null)}
+             ${dado('Empresa', empresa)}
+             ${dado('Fornecedor', l.fornecedorRazaoSocial ? escapar(l.fornecedorRazaoSocial) : null)}
+             ${dado('Valor', l.valor != null ? moeda(l.valor) : null, true)}
+             ${dado('Vencimento', l.vencimento ? fmtData(l.vencimento) : null, true)}
+             ${dado('Banco', escapar(l.bancoNome ?? l.banco ?? '') || null)}
+             ${
+               l.codigoBarras
+                 ? `<div class="lista-boletos__dado lista-boletos__dado--largo">
+                      <span class="lista-boletos__rotulo">Código de barras</span>
+                      <span class="lista-boletos__valor">
+                        <code>${escapar(l.codigoBarras)}</code>
+                        <button type="button" class="acao-icone" data-copiar="${escapar(l.codigoBarras)}"
+                                title="Copiar">${ICONES.copiar}</button>
+                      </span>
+                    </div>`
+                 : ''
+             }
+           </div>`
+        : ''
+    }
+    ${anteriores}
+  </div>`;
+}
+
+/** Atualiza só o texto de estado de um item, sem redesenhar a lista inteira. */
+function atualizarLinha(item) {
+  const alvo = document.querySelector(`[data-id="${item.id}"] .lista-boletos__estado`);
+  if (alvo) alvo.textContent = item.progresso ?? item.motivo ?? '';
+}
+
+function desenharResumo() {
+  const area = el('resumo-leitura');
+  if (!itens.length) {
+    area.innerHTML = '';
+    return;
+  }
+
+  const conta = (...estados) => itens.filter((i) => estados.includes(i.estado)).length;
+  const prontos = conta('lido');
+  const parciais = conta('lido_parcial');
+  const barrados = conta('repetido', 'invalido', 'duplicado_no_lote');
+  const lendo = conta('lendo', 'aguardando');
+
+  if (lendo) {
+    area.innerHTML = `<div class="aviso aviso--info">${ICONES.atualizar}
+      <div>Lendo ${lendo} de ${itens.length} arquivo(s)...</div></div>`;
+    return;
+  }
+
+  const partes = [];
+  if (prontos) partes.push(`<strong>${prontos}</strong> lido(s) por completo`);
+  if (parciais) partes.push(`<strong>${parciais}</strong> com leitura parcial`);
+  if (barrados) partes.push(`<strong>${barrados}</strong> que não vão`);
+
+  area.innerHTML = `
+    <div class="aviso aviso--${barrados ? 'atencao' : 'ok'}">
+      ${barrados ? ICONES.alerta : ICONES.checkCirculo}
+      <div>
+        <span class="aviso__titulo">${itens.length} arquivo(s): ${partes.join(', ')}</span>
+        ${
+          parciais
+            ? 'Os de leitura parcial vão do mesmo jeito — a operação completa o que faltar. ' +
+              'Você não precisa corrigir nada aqui.'
+            : 'Estes dados vão para conferência da operação.'
+        }
       </div>
     </div>`;
+}
 
-  el('copiar-codigo')?.addEventListener('click', () =>
-    copiar(lido.codigoBarras, 'Código de barras copiado.')
-  );
+function atualizarBotaoEnviar() {
+  const quantos = itens.filter(podeEnviar).length;
+  const botao = el('botao-enviar');
+  if (!botao) return;
+  botao.disabled = quantos === 0 || enviando;
+  botao.textContent = quantos === 1 ? 'Enviar 1 boleto' : `Enviar ${quantos} boletos`;
 }
 
 /* ========================================================================== *
- * Empresa e conta
+ * Enviar
  * ========================================================================== */
-function ligarBuscaDeEmpresa() {
-  const entrada = el('busca-empresa');
-  const lista = el('resultados-empresa');
-
-  const buscar = aguardarPausa(async () => {
-    const termo = entrada.value.trim();
-    if (termo.length < 2) {
-      lista.classList.add('oculto');
-      return;
-    }
-
-    const achadas = await buscarEmpresas(termo, 8);
-    if (!achadas.length) {
-      lista.classList.remove('oculto');
-      lista.innerHTML = `<div class="resultados-busca__vazio">
-        Nenhuma empresa encontrada. Confira o nome ou o CNPJ.
-      </div>`;
-      return;
-    }
-
-    lista.classList.remove('oculto');
-    lista.innerHTML = achadas
-      .map(
-        (e) => `
-        <button type="button" class="resultados-busca__item" data-documento="${escapar(e.documento)}">
-          <span class="resultados-busca__nome">${escapar(e.razaoSocial)}</span>
-          <span class="resultados-busca__meta">
-            ${escapar(formatarDocumento(e))} ·
-            ${e.contas.filter((c) => c.ativa).length} conta(s)
-            ${e.grupo ? ` · ${escapar(e.grupo)}` : ''}
-          </span>
-        </button>`
-      )
-      .join('');
-
-    lista.querySelectorAll('[data-documento]').forEach((botao) => {
-      botao.addEventListener('click', async () => {
-        const empresa = await empresaPorDocumento(botao.dataset.documento);
-        if (empresa) await escolherEmpresa(empresa, { lidaDoBoleto: false });
-        lista.classList.add('oculto');
+function ligarEnvio() {
+  document.querySelectorAll('input[name=tipo]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      // O tipo influencia o palpite do número do documento, então relemos.
+      itens.forEach((i) => {
+        if (podeEnviar(i)) i.estado = 'aguardando';
       });
+      lerPendentes();
     });
-  }, 220);
-
-  entrada.addEventListener('input', buscar);
-  entrada.addEventListener('focus', () => {
-    if (entrada.value.trim().length >= 2) buscar();
   });
 
-  // Clicar fora fecha a lista.
-  document.addEventListener('click', (ev) => {
-    if (!ev.target.closest('#bloco-busca-empresa')) lista.classList.add('oculto');
+  el('botao-atualizar-meus').addEventListener('click', () => carregarMeusBoletos());
+
+  el('formulario-envio').addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    if (enviando) return;
+
+    document.querySelectorAll('.campo__erro').forEach((e) => e.classList.add('oculto'));
+
+    const nome = el('nome').value.trim();
+    const sobrenome = el('sobrenome').value.trim();
+    if (!nome) return marcarErro('nome', 'Preencha seu nome.');
+    if (!sobrenome) return marcarErro('sobrenome', 'Preencha seu sobrenome.');
+
+    const fila = itens.filter(podeEnviar);
+    if (!fila.length) return avisar('Nenhum arquivo pronto para enviar.', 'atencao');
+
+    enviando = true;
+    atualizarBotaoEnviar();
+    el('progresso-envio').classList.remove('oculto');
+
+    const tipo = tipoEscolhido();
+    const observacoes = el('observacoes').value.trim() || null;
+    const resultados = [];
+
+    for (let i = 0; i < fila.length; i += 1) {
+      const item = fila[i];
+      item.estado = 'enviando';
+      desenharLista();
+
+      el('texto-progresso').textContent =
+        `Enviando ${i + 1} de ${fila.length}: ${item.arquivo.name}`;
+      el('barra-progresso').style.width = `${Math.round((i / fila.length) * 100)}%`;
+
+      try {
+        const criado = await dados.criarBoleto(
+          montarRegistro(item, { tipo, nome, sobrenome, observacoes }),
+          item.arquivo
+        );
+        item.estado = 'enviado';
+        resultados.push({ item, ok: true, protocolo: criado?.numero_protocolo });
+      } catch (erro) {
+        console.error(erro);
+        item.estado = 'falhou';
+        item.motivo = erro.message;
+        resultados.push({ item, ok: false, erro: erro.message });
+      }
+      desenharLista();
+    }
+
+    el('barra-progresso').style.width = '100%';
+    el('texto-progresso').textContent = 'Concluído.';
+    enviando = false;
+
+    desenharResultado(resultados);
+
+    // Os que deram certo saem da lista; os que falharam ficam para tentar de novo.
+    for (let i = itens.length - 1; i >= 0; i -= 1) {
+      if (itens[i].estado === 'enviado') itens.splice(i, 1);
+    }
+    desenharLista();
+    desenharResumo();
+    el('progresso-envio').classList.add('oculto');
+    el('barra-progresso').style.width = '0';
+
+    await carregarMeusBoletos();
   });
 }
 
 /**
- * O textinho embaixo do nome da empresa, explicando de onde ela veio.
- *
- * O caso da filial merece explicação na tela, não só no código: o boleto vem
- * contra 30.866.542/0002-93 e a planilha cadastra 30.866.542/0001-02. É a
- * mesma empresa — a raiz do CNPJ é igual, muda a unidade. Como a conta
- * bancária cadastrada é a da matriz, é ela que vai ser usada, e quem envia
- * precisa saber disso para conferir se está certo.
+ * O registro que vai para o banco. Campos não lidos vão como null de propósito
+ * — o banco aceita (db/10) e a operação completa depois.
  */
-function notaDaEmpresa({ lidaDoBoleto, porRaiz, filialDoBoleto, cnpjDoBoleto }) {
-  if (!lidaDoBoleto) return '';
-
-  if (porRaiz && filialDoBoleto) {
-    return `<div class="cartao-empresa__nota cartao-empresa__nota--atencao">
-      O boleto foi emitido contra a filial <strong>${escapar(filialDoBoleto)}</strong>
-      (${escapar(fmtCnpj(cnpjDoBoleto))}), e a planilha cadastra esta empresa pela matriz.
-      É a mesma empresa — a raiz do CNPJ é igual. As contas abaixo são as cadastradas.
-    </div>`;
-  }
-
-  return '<div class="cartao-empresa__nota">Este CNPJ estava no boleto e bate com a nossa planilha.</div>';
-}
-
-async function escolherEmpresa(
-  empresa,
-  { lidaDoBoleto = false, porRaiz = false, filialDoBoleto = null, cnpjDoBoleto = null } = {}
-) {
-  estado.empresa = empresa;
-
-  const contas = await contasDaEmpresa(empresa.documento);
-  preencherSelectContas(el('conta'), contas);
-  estado.conta = el('conta').value || null;
-
-  el('busca-empresa').value = empresa.razaoSocial;
-  mostrarSelo('selo-empresa', lidaDoBoleto);
-
-  el('empresa-identificada').classList.remove('oculto');
-  el('empresa-identificada').innerHTML = `
-    <div class="cartao-empresa ${lidaDoBoleto ? 'cartao-empresa--lida' : ''}">
-      <div class="cartao-empresa__icone" data-icone="${lidaDoBoleto ? 'checkCirculo' : 'planilha'}"></div>
-      <div class="cartao-empresa__texto">
-        <div class="cartao-empresa__nome">${escapar(empresa.razaoSocial)}</div>
-        <div class="cartao-empresa__meta">
-          ${escapar(formatarDocumento(empresa))}
-          ${empresa.grupo ? ` · grupo ${escapar(empresa.grupo)}` : ''}
-          · ${contas.length} conta(s) ativa(s)
-        </div>
-        ${notaDaEmpresa({ lidaDoBoleto, porRaiz, filialDoBoleto, cnpjDoBoleto })}
-      </div>
-      <button type="button" class="botao botao--fantasma botao--pequeno" id="trocar-empresa">Trocar</button>
-    </div>`;
-  pintarIcones(el('empresa-identificada'));
-
-  el('trocar-empresa').addEventListener('click', () => {
-    estado.empresa = null;
-    estado.conta = null;
-    el('empresa-identificada').classList.add('oculto');
-    el('busca-empresa').value = '';
-    el('busca-empresa').focus();
-    mostrarSelo('selo-empresa', false);
-    el('conta').innerHTML = '<option value="">Escolha a empresa primeiro</option>';
-    el('conta').disabled = true;
-  });
-
-  el('dica-conta').textContent =
-    contas.length === 1
-      ? 'Esta empresa tem uma conta ativa só, e ela já está selecionada.'
-      : `Esta empresa tem ${contas.length} contas ativas. Escolha a certa para este pagamento.`;
-
-  el('conta').addEventListener('change', () => {
-    estado.conta = el('conta').value || null;
-  });
-}
-
-/* ========================================================================== *
- * Revisão
- * ========================================================================== */
-function desenharRevisao() {
-  const contaEscolhida = el('conta').selectedOptions[0];
-  const v = valorParaNumero(el('valor').value);
-
-  const linha = (rotulo, valor, alerta = false) => `
-    <div class="lista-detalhes__item${alerta ? ' lista-detalhes__item--alerta' : ''}">
-      <span class="lista-detalhes__rotulo">${escapar(rotulo)}</span>
-      <span class="lista-detalhes__valor">${valor ?? '—'}</span>
-    </div>`;
-
-  const avisos = [];
-  if (estado.extracao?.confianca && estado.extracao.confianca !== 'alta') {
-    avisos.push('O valor e o vencimento não vieram conferidos pelo dígito verificador.');
-  }
-  if (estado.extracao?.vencimentoAmbiguo) {
-    avisos.push('A data de vencimento ficou ambígua na leitura. Confira no boleto.');
-  }
-  if (el('vencimento').value && new Date(el('vencimento').value) < new Date().setHours(0, 0, 0, 0)) {
-    avisos.push('Este boleto já está vencido.');
-  }
-
-  el('revisao').innerHTML = `
-    ${
-      avisos.length
-        ? `<div class="aviso aviso--atencao" style="margin-bottom:18px;">
-             ${ICONES.alerta}
-             <div><span class="aviso__titulo">Confira antes de enviar</span>
-               <ul>${avisos.map((a) => `<li>${escapar(a)}</li>`).join('')}</ul></div>
-           </div>`
-        : ''
-    }
-    <div class="lista-detalhes">
-      ${linha('Arquivo', `${escapar(estado.arquivo?.name ?? '')} <small>(${tamanhoArquivo(estado.arquivo?.size)})</small>`)}
-      ${linha('Solicitante', `${escapar(el('nome').value)} ${escapar(el('sobrenome').value)}`)}
-      ${linha('Documento', `<strong>${escapar(el('tipo-documento').value)}-${escapar(el('numero-documento').value)}</strong>`)}
-      ${linha('Unidade de negócio', `${escapar(estado.empresa?.razaoSocial ?? '')}<br /><small>${escapar(formatarDocumento(estado.empresa))}</small>`)}
-      ${linha('Código de conta (CC)', escapar(contaEscolhida?.textContent ?? el('conta').value))}
-      ${linha('Fornecedor', `${escapar(el('fornecedor').value)}${el('fornecedor-cnpj').value ? `<br /><small>${escapar(el('fornecedor-cnpj').value)}</small>` : ''}`)}
-      ${linha('Valor', `<strong>${v != null ? moeda(v) : '—'}</strong>`)}
-      ${linha('Vencimento', fmtData(el('vencimento').value))}
-      ${linha('Data desejada de pagamento', el('data-pagamento').value ? fmtData(el('data-pagamento').value) : '—')}
-      ${linha('Departamento', escapar(el('departamento').value))}
-      ${linha('Código de barras', estado.extracao?.codigoBarras ? `<code>${escapar(estado.extracao.codigoBarras)}</code>` : '—')}
-      ${linha('Observações', escapar(el('observacoes').value) || '—')}
-    </div>`;
-}
-
-/* ========================================================================== *
- * Envio
- * ========================================================================== */
-function coletar() {
-  const codigo = estado.extracao ?? {};
-  const contaEscolhida = el('conta').selectedOptions[0];
+function montarRegistro(item, { tipo, nome, sobrenome, observacoes }) {
+  const l = item.lido ?? {};
+  const empresa = item.empresa?.empresa ?? null;
 
   return {
-    solicitante_nome: el('nome').value.trim(),
-    solicitante_sobrenome: el('sobrenome').value.trim(),
-    tipo_documento: el('tipo-documento').value,
-    numero_documento: el('numero-documento').value.trim(),
-    documento_regularizado:
-      document.querySelector('input[name=regularizado]:checked')?.value === 'sim',
+    solicitante_nome: nome,
+    solicitante_sobrenome: sobrenome,
+    tipo_documento: tipo,
+    numero_documento: l.numeroDocumento ?? null,
+    documento_regularizado: false, // quem confirma isso é a operação
 
-    cc: el('conta').value,
-    conta_banco: contaEscolhida?.dataset.banco || null,
-    conta_agencia: contaEscolhida?.dataset.agencia || null,
-    conta_tipo: contaEscolhida?.dataset.tipo || null,
-    unidade_negocio: estado.empresa?.razaoSocial ?? '',
-    unidade_cnpj: estado.empresa?.documento ?? '',
+    // A conta fica em branco: com 69% das empresas tendo mais de uma, não há
+    // como adivinhar, e escolher é decisão da operação.
+    cc: null,
+    unidade_negocio: empresa?.razaoSocial ?? null,
+    unidade_cnpj: empresa?.documento ?? null,
 
-    fornecedor_razao_social: el('fornecedor').value.trim(),
-    fornecedor_cnpj: el('fornecedor-cnpj').value.replace(/\D+/g, '') || null,
+    fornecedor_razao_social: l.fornecedorRazaoSocial ?? null,
+    fornecedor_cnpj: l.fornecedorCnpj ?? null,
 
-    valor: valorParaNumero(el('valor').value),
-    vencimento: el('vencimento').value,
-    data_pagamento_desejada: el('data-pagamento').value || null,
+    valor: l.valor ?? null,
+    vencimento: l.vencimento ?? null,
+    data_pagamento_desejada: null,
 
-    codigo_barras: codigo.codigoBarras ?? null,
-    linha_digitavel: codigo.linhaDigitavel ?? null,
-    banco_emissor: codigo.bancoNome ?? codigo.banco ?? null,
-    extracao_confianca: codigo.confianca ?? 'manual',
-    extracao_metodo: codigo.metodo ?? 'manual',
-    extracao_avisos: codigo.avisos ?? [],
+    codigo_barras: l.codigoBarras ?? null,
+    linha_digitavel: l.linhaDigitavel ?? null,
+    banco_emissor: l.bancoNome ?? l.banco ?? null,
+    extracao_confianca: l.confianca ?? 'manual',
+    extracao_metodo: l.metodo ?? 'nenhum',
+    extracao_avisos: l.avisos ?? [],
 
-    departamento: el('departamento').value,
-    observacoes_cliente: el('observacoes').value.trim() || null,
+    departamento: null,
+    observacoes_cliente: observacoes,
   };
 }
 
-function ligarEnvio() {
-  el('formulario-boleto').addEventListener('submit', async (evento) => {
-    evento.preventDefault();
-    if (estado.enviando) return;
+function desenharResultado(resultados) {
+  const ok = resultados.filter((r) => r.ok);
+  const falhas = resultados.filter((r) => !r.ok);
 
-    // Última conferência: todas as etapas de novo, para o caso de alguém ter
-    // editado algo depois de já ter concluído.
-    for (let n = 1; n <= 7; n += 1) {
-      if (!validarEtapa(n)) {
-        irParaEtapa(n);
-        avisar('Faltou algo nesta etapa.', 'atencao');
-        return;
-      }
-    }
+  el('resultado-envio').innerHTML = `
+    <div class="aviso aviso--${falhas.length ? 'atencao' : 'ok'}" style="margin-top:18px;">
+      ${falhas.length ? ICONES.alerta : ICONES.checkCirculo}
+      <div>
+        <span class="aviso__titulo">
+          ${ok.length} boleto(s) enviado(s)${falhas.length ? `, ${falhas.length} não` : ''}
+        </span>
+        ${
+          ok.length
+            ? `Protocolos: ${ok.map((r) => `<strong>#${r.protocolo ?? '?'}</strong>`).join(', ')}.
+               A operação vai conferir os dados e associar. Você acompanha em
+               "Meus boletos" logo abaixo.`
+            : ''
+        }
+        ${
+          falhas.length
+            ? `<ul style="margin-top:8px;">${falhas
+                .map((r) => `<li>${escapar(r.item.arquivo.name)}: ${escapar(r.erro)}</li>`)
+                .join('')}</ul>`
+            : ''
+        }
+      </div>
+    </div>`;
 
-    estado.enviando = true;
-    el('progresso-envio').classList.remove('oculto');
-    const barra = el('barra-progresso');
-    const texto = el('texto-progresso');
-    texto.textContent = 'Enviando o arquivo...';
-
-    try {
-      await comBotaoOcupado(el('botao-enviar'), 'Enviando...', () =>
-        dados.criarBoleto(coletar(), estado.arquivo, (pct) => {
-          barra.style.width = `${pct}%`;
-          if (pct >= 65) texto.textContent = 'Gravando os dados...';
-          if (pct >= 100) texto.textContent = 'Pronto.';
-        })
-      );
-
-      avisar('Boleto enviado. A operação já pode ver na fila.', 'ok', 5000);
-      reiniciarFormulario();
-      await carregarMeusBoletos();
-    } catch (erro) {
-      console.error(erro);
-      avisar(erro.message, 'erro', 9000);
-      texto.textContent = '';
-    } finally {
-      estado.enviando = false;
-      el('progresso-envio').classList.add('oculto');
-      barra.style.width = '0';
-    }
-  });
-
-  el('botao-atualizar-meus').addEventListener('click', () => carregarMeusBoletos());
+  if (ok.length) avisar(`${ok.length} boleto(s) enviado(s).`, 'ok', 4000);
 }
 
-function reiniciarFormulario() {
-  el('formulario-boleto').reset();
-  estado.arquivo = null;
-  estado.extracao = null;
-  estado.empresa = null;
-  estado.conta = null;
-  estado.concluidas.clear();
-
-  el('arquivo-escolhido').classList.add('oculto');
-  el('area-upload').classList.remove('oculto');
-  el('painel-extracao').innerHTML = '';
-  el('empresa-identificada').classList.add('oculto');
-  el('bloco-candidatos-numero').hidden = true;
-  el('conta').innerHTML = '<option value="">Escolha a empresa primeiro</option>';
-  el('conta').disabled = true;
-  document.querySelectorAll('.selo-lido').forEach((s) => s.classList.add('oculto'));
-  document.querySelectorAll('.campo__erro').forEach((e) => e.classList.add('oculto'));
-
-  const p = sessao.perfil();
-  el('email').value = sessao.usuario()?.email ?? '';
-  el('nome').value = p?.nome ?? '';
-  el('sobrenome').value = p?.sobrenome ?? '';
-
-  irParaEtapa(1);
+function marcarErro(campo, mensagem) {
+  const erro = el(`erro-${campo}`);
+  if (erro) {
+    erro.innerHTML = `${ICONES.alerta}${escapar(mensagem)}`;
+    erro.classList.remove('oculto');
+  }
+  el(campo)?.focus();
+  enviando = false;
+  atualizarBotaoEnviar();
 }
 
 /* ========================================================================== *
  * Meus boletos
  * ========================================================================== */
-async function carregarMeusBoletos() {
+async function carregarMeusBoletos({ avisarMudanca = false } = {}) {
   const area = el('meus-boletos');
-  area.innerHTML = `<div class="moldura-tabela" style="padding:20px;">
-      <div class="esqueleto" style="width:100%;margin-bottom:10px;"></div>
-      <div class="esqueleto" style="width:80%;"></div>
-    </div>`;
+  if (!area.innerHTML) {
+    area.innerHTML = `<div class="moldura-tabela" style="padding:20px;">
+        <div class="esqueleto" style="width:100%;margin-bottom:10px;"></div>
+        <div class="esqueleto" style="width:80%;"></div>
+      </div>`;
+  }
 
   try {
     const { linhas, total } = await dados.listarBoletos({
       escopo: 'meus',
-      porPagina: 20,
+      porPagina: 50,
       ordenarPor: 'data_envio',
       ordem: 'desc',
     });
+
+    desenharNovidades(
+      linhas.filter((b) => b.novidade_para_solicitante),
+      avisarMudanca
+    );
 
     if (!total) {
       area.innerHTML = `
@@ -1043,57 +637,157 @@ async function carregarMeusBoletos() {
     area.innerHTML = `
       <div class="moldura-tabela">
         <div class="rolagem-tabela">
-          <table class="tabela" style="min-width:900px;">
+          <table class="tabela tabela--meus">
             <thead>
               <tr>
-                <th>Protocolo</th><th>NF/MD</th><th>Enviado em</th>
-                <th>Fornecedor</th><th>Valor</th><th>Vencimento</th>
-                <th>Situação</th><th class="col-neutra">Cód. barras</th>
+                <th class="col-neutra">Boleto</th>
+                <th>Protocolo</th>
+                <th>NF/MD</th>
+                <th>Enviado em</th>
+                <th>Und. neg / CNPJ</th>
+                <th>Fornecedor</th>
+                <th class="col-neutra">Valor</th>
+                <th class="col-neutra">Vencimento</th>
+                <th>Situação</th>
+                <th class="col-neutra">Associado em</th>
+                <th>Executado por</th>
               </tr>
             </thead>
             <tbody>${linhas.map(linhaMeuBoleto).join('')}</tbody>
           </table>
         </div>
-        <div class="rodape-tabela"><span>${total} boleto(s) enviado(s) por você.</span></div>
+        <div class="rodape-tabela">
+          <span>${total} boleto(s) enviado(s) por você.</span>
+        </div>
       </div>`;
 
+    pintarIcones(area);
+    area.querySelectorAll('[data-motivo]').forEach((b) =>
+      b.addEventListener('click', () => avisar(b.dataset.motivo, 'atencao', 10000))
+    );
     area.querySelectorAll('[data-copiar-codigo]').forEach((b) =>
       b.addEventListener('click', () => copiar(b.dataset.copiarCodigo, 'Código copiado.'))
-    );
-    area.querySelectorAll('[data-motivo]').forEach((b) =>
-      b.addEventListener('click', () => avisar(b.dataset.motivo, 'atencao', 9000))
     );
   } catch (erro) {
     area.innerHTML = `<div class="aviso aviso--erro">${ICONES.xCirculo}<div>${escapar(erro.message)}</div></div>`;
   }
 }
 
+/**
+ * O aviso de novidade.
+ *
+ * Enquanto não houver e-mail configurado, este é o canal: um resumo no topo da
+ * própria tela, que fica até a pessoa marcar como visto. Não é tão bom quanto
+ * e-mail, mas não depende de limite de envio e funciona hoje.
+ */
+function desenharNovidades(novidades, comAviso) {
+  const area = el('aviso-novidades');
+  if (!novidades.length) {
+    area.innerHTML = '';
+    return;
+  }
+
+  const associados = novidades.filter((b) => b.status === 'associado');
+  const recusados = novidades.filter((b) => b.status === 'recusado');
+
+  area.innerHTML = `
+    <div class="aviso aviso--${recusados.length ? 'atencao' : 'ok'} aviso--novidade">
+      ${recusados.length ? ICONES.alerta : ICONES.checkCirculo}
+      <div>
+        <span class="aviso__titulo">
+          ${
+            novidades.length === 1
+              ? 'Um boleto seu mudou de situação'
+              : `${novidades.length} boletos seus mudaram de situação`
+          }
+        </span>
+        ${
+          associados.length
+            ? `<div>${associados.length} associado(s): ${associados
+                .map((b) => `<strong>#${b.numero_protocolo}</strong>`)
+                .join(', ')}</div>`
+            : ''
+        }
+        ${
+          recusados.length
+            ? `<div>${recusados.length} recusado(s):
+                 <ul>${recusados
+                   .map(
+                     (b) =>
+                       `<li><strong>#${b.numero_protocolo}</strong> ${escapar(b.documento_rotulo)} — ${escapar(b.observacoes_operador ?? 'sem motivo informado')}</li>`
+                   )
+                   .join('')}</ul></div>`
+            : ''
+        }
+      </div>
+      <button type="button" class="botao botao--contorno botao--pequeno" id="botao-marcar-vistos">
+        Entendi
+      </button>
+    </div>`;
+
+  pintarIcones(area);
+
+  el('botao-marcar-vistos').addEventListener('click', async (ev) => {
+    await comBotaoOcupado(ev.currentTarget, 'Ok...', () => dados.marcarComoVistos());
+    await carregarMeusBoletos();
+  });
+
+  if (comAviso) {
+    avisar(
+      recusados.length
+        ? `${recusados.length} boleto(s) seu(s) foi(ram) recusado(s). Veja o motivo no topo.`
+        : `${associados.length} boleto(s) seu(s) foi(ram) associado(s).`,
+      recusados.length ? 'atencao' : 'ok',
+      8000
+    );
+  }
+}
+
 function linhaMeuBoleto(b) {
-  const selo = {
-    pendente: '<span class="selo selo--pendente">Aguardando operação</span>',
-    associado: '<span class="selo selo--associado">Associado</span>',
-    recusado: '<span class="selo selo--recusado">Recusado</span>',
-  }[b.status] ?? '';
+  const selo =
+    {
+      pendente: '<span class="selo selo--pendente">Aguardando operação</span>',
+      associado: '<span class="selo selo--associado">Associado</span>',
+      recusado: '<span class="selo selo--recusado">Recusado</span>',
+    }[b.status] ?? '';
 
   const motivo =
     b.status === 'recusado' && b.observacoes_operador
-      ? `<button type="button" class="acao-icone" data-motivo="${escapar(b.observacoes_operador)}" title="Ver o motivo">${ICONES.info}</button>`
+      ? `<button type="button" class="acao-icone" data-motivo="${escapar(b.observacoes_operador)}"
+                 title="Ver o motivo">${ICONES.info}</button>`
       : '';
 
+  const novidade = b.novidade_para_solicitante
+    ? '<span class="ponto-novidade" title="Mudou desde a última vez que você olhou"></span>'
+    : '';
+
+  const vazio = '<span class="vazio-celula">—</span>';
+
   return `
-    <tr>
-      <td>#${b.numero_protocolo ?? '—'}</td>
-      <td>${escapar(b.documento_rotulo ?? `${b.tipo_documento}-${b.numero_documento}`)}</td>
-      <td class="data-simples">${dataHora(b.data_envio)}</td>
-      <td>${escapar(b.fornecedor_razao_social ?? '—')}</td>
-      <td class="valor-monetario">${moeda(b.valor)}</td>
-      <td class="data-simples">${fmtData(b.vencimento)}</td>
-      <td><div style="display:flex;align-items:center;gap:6px;">${selo}${motivo}</div></td>
+    <tr${b.novidade_para_solicitante ? ' class="linha--novidade"' : ''}>
       <td>${
         b.codigo_barras
-          ? `<button type="button" class="acao-icone" data-copiar-codigo="${escapar(b.codigo_barras)}" title="Copiar">${ICONES.codigoBarras}</button>`
-          : '<span class="vazio-celula">—</span>'
+          ? `<button type="button" class="acao-icone" data-copiar-codigo="${escapar(b.codigo_barras)}"
+                     title="Copiar o código de barras">${ICONES.codigoBarras}</button>`
+          : vazio
       }</td>
+      <td>${novidade}#${b.numero_protocolo ?? '—'}</td>
+      <td>${escapar(b.documento_rotulo ?? b.tipo_documento)}</td>
+      <td class="data-simples">${dataHora(b.data_envio)}</td>
+      <td>${
+        b.unidade_negocio
+          ? `<div class="celula-duas-linhas">
+               <span class="celula-duas-linhas__principal">${escapar(b.unidade_negocio)}</span>
+               <span class="celula-duas-linhas__secundaria">${escapar(fmtCnpj(b.unidade_cnpj))}</span>
+             </div>`
+          : vazio
+      }</td>
+      <td>${b.fornecedor_razao_social ? escapar(b.fornecedor_razao_social) : vazio}</td>
+      <td class="valor-monetario">${b.valor != null ? moeda(b.valor) : vazio}</td>
+      <td class="data-simples">${b.vencimento ? fmtData(b.vencimento) : vazio}</td>
+      <td><div style="display:flex;align-items:center;gap:6px;">${selo}${motivo}</div></td>
+      <td class="data-simples">${b.data_associacao ? fmtData(b.data_associacao) : vazio}</td>
+      <td>${b.associado_por_nome ? escapar(b.associado_por_nome) : vazio}</td>
     </tr>`;
 }
 

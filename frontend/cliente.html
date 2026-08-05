@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Enviar boleto · Portal Serena</title>
+  <title>Enviar boletos · Portal Serena</title>
   <link rel="icon" href="./assets/logos/serena-simbolo.png" />
   <link rel="stylesheet" href="./css/app.css" />
 </head>
@@ -11,374 +11,110 @@
   <div class="pagina">
     <div id="topo"></div>
 
-    <main class="conteudo conteudo--estreito">
+    <!-- Largura total: a lista de boletos precisa de espaço horizontal, e não
+         havia motivo para desperdiçar as laterais. -->
+    <main class="conteudo">
       <div class="cabecalho-pagina">
-        <h1>Enviar boleto</h1>
+        <h1>Enviar boletos</h1>
         <p class="cabecalho-pagina__sub">
-          Anexe o boleto. Eu leio o valor, o vencimento, o número do documento,
-          a empresa e o fornecedor de dentro do arquivo — você só confere.
+          Anexe até 20 boletos de uma vez. Eu leio o que der de cada arquivo e
+          mostro aqui — <strong>conferir é trabalho da operação</strong>, você
+          não precisa validar nada.
         </p>
       </div>
 
-      <!-- ===================== TRILHA DE ETAPAS ===================== -->
-      <ol class="trilha" id="trilha" aria-label="Etapas do envio"></ol>
+      <div id="aviso-novidades"></div>
 
-      <form id="formulario-boleto" novalidate>
+      <form id="formulario-envio" novalidate>
+        <section class="cartao cartao--envio">
 
-        <!-- ======================= ETAPA 1 ======================= -->
-        <section class="etapa etapa--ativa" data-etapa="1">
-          <header class="etapa__topo">
-            <span class="etapa__numero">1</span>
-            <div class="etapa__titulo">
-              <h2>O boleto</h2>
-              <p class="etapa__sub">PDF, PNG ou JPG de até 10 MB.</p>
-            </div>
-            <span class="etapa__resumo" hidden></span>
-            <button type="button" class="etapa__editar botao botao--fantasma botao--pequeno" hidden>
-              Editar
-            </button>
-          </header>
-
-          <div class="etapa__corpo">
-            <div class="area-upload" id="area-upload" tabindex="0" role="button"
-                 aria-label="Escolher o arquivo do boleto">
-              <div class="area-upload__icone" data-icone="upload"></div>
-              <p class="area-upload__principal">Arraste o boleto aqui ou clique para escolher</p>
-              <p class="area-upload__secundario">A leitura automática começa na hora</p>
-            </div>
-            <input type="file" id="arquivo" class="oculto"
-                   accept="application/pdf,image/png,image/jpeg,image/webp" />
-
-            <div id="arquivo-escolhido" class="oculto"></div>
-            <div id="painel-extracao"></div>
-            <span class="campo__erro oculto" id="erro-arquivo"></span>
+          <!-- ==================== OS ARQUIVOS ==================== -->
+          <div class="area-upload" id="area-upload" tabindex="0" role="button"
+               aria-label="Escolher os arquivos dos boletos">
+            <div class="area-upload__icone" data-icone="upload"></div>
+            <p class="area-upload__principal">Arraste os boletos aqui ou clique para escolher</p>
+            <p class="area-upload__secundario">
+              PDF, PNG ou JPG · até 20 arquivos · 10 MB cada
+            </p>
           </div>
+          <input type="file" id="arquivo" class="oculto" multiple
+                 accept="application/pdf,image/png,image/jpeg,image/webp" />
 
-          <footer class="etapa__acoes">
-            <button type="button" class="botao botao--principal" data-avancar="1">Continuar</button>
-          </footer>
-        </section>
+          <div id="resumo-leitura"></div>
+          <div id="lista-arquivos"></div>
+          <span class="campo__erro oculto" id="erro-arquivo"></span>
 
-        <!-- ======================= ETAPA 2 ======================= -->
-        <section class="etapa etapa--bloqueada" data-etapa="2">
-          <header class="etapa__topo">
-            <span class="etapa__numero">2</span>
-            <div class="etapa__titulo">
-              <h2>Quem está solicitando</h2>
-              <p class="etapa__sub">O operador vê nome e sobrenome juntos, numa coluna só.</p>
-            </div>
-            <span class="etapa__resumo" hidden></span>
-            <button type="button" class="etapa__editar botao botao--fantasma botao--pequeno" hidden>
-              Editar
-            </button>
-          </header>
+          <!-- ==================== O POUCO QUE FALTA ==================== -->
+          <div id="bloco-dados" class="oculto">
+            <hr class="divisor-cartao" />
 
-          <div class="etapa__corpo">
             <div class="grupo-campos">
+              <div class="campo campo--largo">
+                <span class="campo__rotulo" id="rotulo-tipo">
+                  Estes boletos são de quê? <span class="obrigatorio">*</span>
+                </span>
+                <div class="opcoes-radio" role="radiogroup" aria-labelledby="rotulo-tipo">
+                  <label class="opcao-radio">
+                    <input type="radio" name="tipo" value="NF" checked /> Notas fiscais (NF)
+                  </label>
+                  <label class="opcao-radio">
+                    <input type="radio" name="tipo" value="MD" /> Medições (MD)
+                  </label>
+                </div>
+                <span class="campo__dica">
+                  É o que define para qual equipe da operação eles vão. Vale para
+                  todos os arquivos deste envio.
+                </span>
+              </div>
+
               <div class="campo">
-                <label class="campo__rotulo" for="nome">Nome <span class="obrigatorio">*</span></label>
+                <label class="campo__rotulo" for="nome">Seu nome <span class="obrigatorio">*</span></label>
                 <input type="text" id="nome" autocomplete="given-name" />
                 <span class="campo__erro oculto" id="erro-nome"></span>
               </div>
+
               <div class="campo">
-                <label class="campo__rotulo" for="sobrenome">Sobrenome <span class="obrigatorio">*</span></label>
+                <label class="campo__rotulo" for="sobrenome">Seu sobrenome <span class="obrigatorio">*</span></label>
                 <input type="text" id="sobrenome" autocomplete="family-name" />
                 <span class="campo__erro oculto" id="erro-sobrenome"></span>
               </div>
-              <div class="campo campo--largo">
-                <label class="campo__rotulo" for="email">E-mail</label>
+
+              <div class="campo">
+                <label class="campo__rotulo" for="email">Seu e-mail</label>
                 <input type="email" id="email" readonly />
                 <span class="campo__dica">É o e-mail da sua conta. Usamos para avisar do andamento.</span>
               </div>
-            </div>
-          </div>
-
-          <footer class="etapa__acoes">
-            <button type="button" class="botao botao--fantasma" data-voltar="2">Voltar</button>
-            <button type="button" class="botao botao--principal" data-avancar="2">Continuar</button>
-          </footer>
-        </section>
-
-        <!-- ======================= ETAPA 3 ======================= -->
-        <section class="etapa etapa--bloqueada" data-etapa="3">
-          <header class="etapa__topo">
-            <span class="etapa__numero">3</span>
-            <div class="etapa__titulo">
-              <h2>O documento</h2>
-              <p class="etapa__sub">Aparece na coluna "NF/MD" da tela do operador.</p>
-            </div>
-            <span class="etapa__resumo" hidden></span>
-            <button type="button" class="etapa__editar botao botao--fantasma botao--pequeno" hidden>
-              Editar
-            </button>
-          </header>
-
-          <div class="etapa__corpo">
-            <div class="grupo-campos">
-              <div class="campo">
-                <label class="campo__rotulo" for="tipo-documento">Tipo <span class="obrigatorio">*</span></label>
-                <select id="tipo-documento">
-                  <option value="">Selecione</option>
-                  <option value="NF">NF — Nota fiscal</option>
-                  <option value="MD">MD — Medição</option>
-                </select>
-                <span class="campo__erro oculto" id="erro-tipo-documento"></span>
-              </div>
-
-              <div class="campo">
-                <label class="campo__rotulo" for="numero-documento">
-                  Número do documento <span class="obrigatorio">*</span>
-                  <span class="selo-lido oculto" id="selo-numero">lido do boleto</span>
-                </label>
-                <input type="text" id="numero-documento" inputmode="numeric" placeholder="8821" />
-                <span class="campo__dica" id="dica-numero">
-                  Número da nota ou da medição. Número de requisição não vale.
-                </span>
-                <span class="campo__erro oculto" id="erro-numero-documento"></span>
-              </div>
-
-              <div class="campo campo--largo" id="bloco-candidatos-numero" hidden>
-                <span class="campo__rotulo">Achei mais de um número. Qual é o certo?</span>
-                <div class="fichas-escolha" id="candidatos-numero"></div>
-              </div>
 
               <div class="campo campo--largo">
-                <span class="campo__rotulo" id="rotulo-regularizado">
-                  O documento está regularizado? <span class="obrigatorio">*</span>
-                </span>
-                <div class="opcoes-radio" role="radiogroup" aria-labelledby="rotulo-regularizado">
-                  <label class="opcao-radio"><input type="radio" name="regularizado" value="sim" /> Sim</label>
-                  <label class="opcao-radio"><input type="radio" name="regularizado" value="nao" /> Não</label>
-                </div>
-                <span class="campo__dica" id="dica-regularizado">
-                  Escolha o tipo acima para ver o que precisa estar em ordem.
-                </span>
-                <span class="campo__erro oculto" id="erro-regularizado"></span>
-              </div>
-            </div>
-          </div>
-
-          <footer class="etapa__acoes">
-            <button type="button" class="botao botao--fantasma" data-voltar="3">Voltar</button>
-            <button type="button" class="botao botao--principal" data-avancar="3">Continuar</button>
-          </footer>
-        </section>
-
-        <!-- ======================= ETAPA 4 ======================= -->
-        <section class="etapa etapa--bloqueada" data-etapa="4">
-          <header class="etapa__topo">
-            <span class="etapa__numero">4</span>
-            <div class="etapa__titulo">
-              <h2>Empresa e conta</h2>
-              <p class="etapa__sub">
-                O CNPJ da nossa empresa vem do boleto. Depois você escolhe a conta.
-              </p>
-            </div>
-            <span class="etapa__resumo" hidden></span>
-            <button type="button" class="etapa__editar botao botao--fantasma botao--pequeno" hidden>
-              Editar
-            </button>
-          </header>
-
-          <div class="etapa__corpo">
-            <div id="empresa-identificada" class="oculto"></div>
-
-            <div class="campo" id="bloco-busca-empresa">
-              <label class="campo__rotulo" for="busca-empresa">
-                Unidade de negócio <span class="obrigatorio">*</span>
-                <span class="selo-lido oculto" id="selo-empresa">lida do boleto</span>
-              </label>
-              <input type="search" id="busca-empresa" autocomplete="off"
-                     placeholder="Digite o nome ou o CNPJ da empresa" />
-              <span class="campo__dica">
-                Os nomes usam algarismos romanos, mas você pode digitar em número:
-                "delta 7 1" encontra "DELTA 7 I".
-              </span>
-              <div class="resultados-busca oculto" id="resultados-empresa" role="listbox"></div>
-              <span class="campo__erro oculto" id="erro-busca-empresa"></span>
-            </div>
-
-            <div class="campo" id="bloco-conta" style="margin-top:16px;">
-              <label class="campo__rotulo" for="conta">
-                Código de conta (CC) <span class="obrigatorio">*</span>
-              </label>
-              <select id="conta" disabled>
-                <option value="">Escolha a empresa primeiro</option>
-              </select>
-              <span class="campo__dica" id="dica-conta"></span>
-              <span class="campo__erro oculto" id="erro-conta"></span>
-            </div>
-          </div>
-
-          <footer class="etapa__acoes">
-            <button type="button" class="botao botao--fantasma" data-voltar="4">Voltar</button>
-            <button type="button" class="botao botao--principal" data-avancar="4">Continuar</button>
-          </footer>
-        </section>
-
-        <!-- ======================= ETAPA 5 ======================= -->
-        <section class="etapa etapa--bloqueada" data-etapa="5">
-          <header class="etapa__topo">
-            <span class="etapa__numero">5</span>
-            <div class="etapa__titulo">
-              <h2>Fornecedor</h2>
-              <p class="etapa__sub">Quem emitiu o boleto.</p>
-            </div>
-            <span class="etapa__resumo" hidden></span>
-            <button type="button" class="etapa__editar botao botao--fantasma botao--pequeno" hidden>
-              Editar
-            </button>
-          </header>
-
-          <div class="etapa__corpo">
-            <div class="grupo-campos">
-              <div class="campo campo--largo">
-                <label class="campo__rotulo" for="fornecedor">
-                  Razão social do fornecedor <span class="obrigatorio">*</span>
-                  <span class="selo-lido oculto" id="selo-fornecedor">lida do boleto</span>
+                <label class="campo__rotulo" for="observacoes">
+                  Algo que a operação precisa saber? <span class="campo__opcional">opcional</span>
                 </label>
-                <input type="text" id="fornecedor" placeholder="Nome da empresa que emitiu o boleto" />
-                <span class="campo__erro oculto" id="erro-fornecedor"></span>
-              </div>
-              <div class="campo">
-                <label class="campo__rotulo" for="fornecedor-cnpj">
-                  CNPJ do fornecedor
-                  <span class="selo-lido oculto" id="selo-fornecedor-cnpj">lido do boleto</span>
-                </label>
-                <input type="text" id="fornecedor-cnpj" inputmode="numeric"
-                       placeholder="00.000.000/0000-00" />
-                <span class="campo__erro oculto" id="erro-fornecedor-cnpj"></span>
+                <textarea id="observacoes" rows="2"
+                          placeholder="Ex.: pagar com prioridade, boleto substitui o anterior..."></textarea>
               </div>
             </div>
-          </div>
 
-          <footer class="etapa__acoes">
-            <button type="button" class="botao botao--fantasma" data-voltar="5">Voltar</button>
-            <button type="button" class="botao botao--principal" data-avancar="5">Continuar</button>
-          </footer>
-        </section>
-
-        <!-- ======================= ETAPA 6 ======================= -->
-        <section class="etapa etapa--bloqueada" data-etapa="6">
-          <header class="etapa__topo">
-            <span class="etapa__numero">6</span>
-            <div class="etapa__titulo">
-              <h2>Valor, vencimento e código de barras</h2>
-              <p class="etapa__sub">
-                Calculados de dentro do código de barras. Só mexa se estiver
-                diferente do boleto.
-              </p>
-            </div>
-            <span class="etapa__resumo" hidden></span>
-            <button type="button" class="etapa__editar botao botao--fantasma botao--pequeno" hidden>
-              Editar
-            </button>
-          </header>
-
-          <div class="etapa__corpo">
-            <div class="grupo-campos">
-              <div class="campo">
-                <label class="campo__rotulo" for="valor">
-                  Valor <span class="obrigatorio">*</span>
-                  <span class="selo-lido oculto" id="selo-valor">calculado</span>
-                </label>
-                <input type="text" id="valor" inputmode="decimal" placeholder="0,00" />
-                <span class="campo__erro oculto" id="erro-valor"></span>
-              </div>
-              <div class="campo">
-                <label class="campo__rotulo" for="vencimento">
-                  Vencimento <span class="obrigatorio">*</span>
-                  <span class="selo-lido oculto" id="selo-vencimento">calculado</span>
-                </label>
-                <input type="date" id="vencimento" />
-                <span class="campo__erro oculto" id="erro-vencimento"></span>
-              </div>
-              <div class="campo campo--largo">
-                <label class="campo__rotulo" for="linha-digitavel">Linha digitável</label>
-                <input type="text" id="linha-digitavel"
-                       placeholder="Cole aqui os 47 dígitos, se preferir digitar" />
-                <span class="campo__dica" id="dica-codigo">
-                  Ao colar, o valor e o vencimento são recalculados na hora.
-                </span>
-              </div>
-              <div class="campo">
-                <label class="campo__rotulo" for="data-pagamento">Data desejada de pagamento</label>
-                <input type="date" id="data-pagamento" />
-              </div>
-            </div>
-          </div>
-
-          <footer class="etapa__acoes">
-            <button type="button" class="botao botao--fantasma" data-voltar="6">Voltar</button>
-            <button type="button" class="botao botao--principal" data-avancar="6">Continuar</button>
-          </footer>
-        </section>
-
-        <!-- ======================= ETAPA 7 ======================= -->
-        <section class="etapa etapa--bloqueada" data-etapa="7">
-          <header class="etapa__topo">
-            <span class="etapa__numero">7</span>
-            <div class="etapa__titulo">
-              <h2>Classificação</h2>
-              <p class="etapa__sub">Ajuda a operação a priorizar e encaminhar.</p>
-            </div>
-            <span class="etapa__resumo" hidden></span>
-            <button type="button" class="etapa__editar botao botao--fantasma botao--pequeno" hidden>
-              Editar
-            </button>
-          </header>
-
-          <div class="etapa__corpo">
-            <div class="grupo-campos">
-              <div class="campo">
-                <label class="campo__rotulo" for="departamento">Departamento <span class="obrigatorio">*</span></label>
-                <select id="departamento"><option value="">Carregando...</option></select>
-                <span class="campo__erro oculto" id="erro-departamento"></span>
-              </div>
-              <div class="campo campo--largo">
-                <label class="campo__rotulo" for="observacoes">Observações</label>
-                <textarea id="observacoes" rows="3"
-                          placeholder="Algo que a operação precisa saber sobre este boleto"></textarea>
-              </div>
-            </div>
-          </div>
-
-          <footer class="etapa__acoes">
-            <button type="button" class="botao botao--fantasma" data-voltar="7">Voltar</button>
-            <button type="button" class="botao botao--principal" data-avancar="7">Revisar e enviar</button>
-          </footer>
-        </section>
-
-        <!-- ==================== REVISÃO FINAL ==================== -->
-        <section class="etapa etapa--bloqueada" data-etapa="8" id="etapa-revisao">
-          <header class="etapa__topo">
-            <span class="etapa__numero" data-icone="check"></span>
-            <div class="etapa__titulo">
-              <h2>Confira e envie</h2>
-              <p class="etapa__sub">Última olhada antes de mandar para a operação.</p>
-            </div>
-          </header>
-
-          <div class="etapa__corpo">
-            <div id="revisao"></div>
-
-            <div id="progresso-envio" class="oculto" style="margin-top:20px;">
+            <div id="progresso-envio" class="oculto">
               <div class="progresso"><div class="progresso__barra" id="barra-progresso"></div></div>
-              <p class="campo__dica" id="texto-progresso" style="margin-top:6px;"></p>
+              <p class="campo__dica" id="texto-progresso"></p>
+            </div>
+
+            <div class="acoes-formulario">
+              <button type="button" class="botao botao--contorno" id="botao-limpar">
+                Começar de novo
+              </button>
+              <button type="submit" class="botao botao--principal" id="botao-enviar">
+                Enviar
+              </button>
             </div>
           </div>
-
-          <footer class="etapa__acoes">
-            <button type="button" class="botao botao--fantasma" data-voltar="8">Voltar</button>
-            <button type="submit" class="botao botao--principal" id="botao-enviar">
-              Enviar boleto
-            </button>
-          </footer>
         </section>
       </form>
 
+      <div id="resultado-envio"></div>
+
       <!-- ========================= MEUS BOLETOS ========================= -->
-      <section style="margin-top:48px;">
+      <section style="margin-top:44px;">
         <div class="cabecalho-pagina__linha" style="margin-bottom:16px;">
           <h2>Meus boletos</h2>
           <button class="botao botao--fantasma botao--pequeno" id="botao-atualizar-meus">

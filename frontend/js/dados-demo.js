@@ -588,11 +588,18 @@ export function criarDriverDemo() {
         throw erro(`Já associado por ${b.associado_por_nome ?? 'alguém'}.`, 'ja_associado');
       }
 
+      // A mesma trava do banco: boleto pela metade não vira pagamento.
+      const faltando = pendenciasDe(b);
+      if (faltando.length) {
+        throw erro(`Antes de associar, preencha: ${faltando.join(', ')}.`, 'incompleto');
+      }
+
       b.status = 'associado';
       b.data_associacao = agora();
       b.associado_por = sessao.usuario.id;
       b.associado_por_nome = sessao.perfil.nome_completo;
       b.associado_por_email = sessao.perfil.email;
+      b.visto_pelo_solicitante_em = null;
       if (observacao) b.observacoes_operador = observacao;
 
       s.eventos.push({
@@ -618,6 +625,7 @@ export function criarDriverDemo() {
       b.associado_por = null;
       b.associado_por_nome = null;
       b.observacoes_operador = motivo.trim();
+      b.visto_pelo_solicitante_em = null;
 
       s.eventos.push({
         id: uuid(), boleto_id: id, tipo: 'status:recusado',
@@ -657,6 +665,95 @@ export function criarDriverDemo() {
       return s.arquivos[boleto.arquivo_caminho] ?? null;
     },
 
+    async completarBoleto(id, dados = {}) {
+      const s = await estado();
+      const sessao = montarSessao(s);
+      if (sessao.perfil?.papel !== 'admin') throw erro('Só a operação pode completar.', 'permissao');
+
+      const b = s.boletos.find((x) => x.id === id);
+      if (!b) throw erro('Boleto não encontrado.', 'nao_encontrado');
+      if (b.status === 'associado') throw erro('Reabra o boleto antes de alterar.', 'ja_associado');
+
+      // Quando a conta vem, buscamos a empresa na planilha, igual ao gatilho.
+      if (dados.conta && dados.empresaDocumento) {
+        const { acharEmpresa } = await import('./contas.js');
+        const achado = await acharEmpresa(dados.empresaDocumento);
+        if (!achado) throw erro('Empresa não encontrada na planilha.', 'empresa');
+        const conta = achado.empresa.contas.find((c) => c.conta === dados.conta && c.ativa);
+        if (!conta) throw erro(`A conta ${dados.conta} não é desta empresa, ou está encerrada.`, 'conta');
+        b.cc = conta.conta;
+        b.conta_banco = conta.banco;
+        b.conta_agencia = conta.agencia;
+        b.conta_tipo = conta.tipoConta;
+        b.unidade_cnpj = achado.empresa.documento;
+        b.unidade_negocio = achado.empresa.razaoSocial;
+      }
+
+      const aplicar = (campo, valor) => { if (valor != null && valor !== '') b[campo] = valor; };
+      aplicar('numero_documento', dados.numeroDocumento);
+      aplicar('valor', dados.valor);
+      aplicar('vencimento', dados.vencimento);
+      aplicar('fornecedor_razao_social', dados.fornecedor);
+      aplicar('fornecedor_cnpj', dados.fornecedorCnpj);
+      aplicar('departamento', dados.departamento);
+      if (dados.regularizado != null) b.documento_regularizado = dados.regularizado;
+      if (dados.observacao) b.observacoes_operador = dados.observacao;
+
+      s.eventos.push({
+        id: uuid(), boleto_id: id, tipo: 'completado',
+        observacao: 'dados completados pela operação',
+        usuario_email: sessao.perfil.email, criado_em: agora(),
+      });
+      gravar(s);
+      avisar();
+      return enfeitar(b);
+    },
+
+    async marcarComoVistos() {
+      const s = await estado();
+      const sessao = montarSessao(s);
+      let n = 0;
+      for (const b of s.boletos) {
+        if (b.solicitante_email === sessao.usuario?.email
+            && !b.visto_pelo_solicitante_em && b.status !== 'pendente') {
+          b.visto_pelo_solicitante_em = agora();
+          n += 1;
+        }
+      }
+      gravar(s);
+      return n;
+    },
+
+    async situacaoDoCodigo(codigo) {
+      const s = await estado();
+      const sessao = montarSessao(s);
+      const digitos = String(codigo ?? '').replace(/\D+/g, '');
+      if (digitos.length !== 44) return [];
+
+      const souAdmin = sessao.perfil?.papel === 'admin';
+
+      return s.boletos
+        .filter((b) => b.codigo_barras === digitos)
+        .sort((a, b) => String(b.data_envio).localeCompare(String(a.data_envio)))
+        .map((b) => {
+          const meu = b.solicitante_email === sessao.usuario?.email;
+          const podeVer = meu || souAdmin;
+          return {
+            numero_protocolo: b.numero_protocolo,
+            status: b.status,
+            tipo_documento: b.tipo_documento,
+            numero_documento: b.numero_documento,
+            data_envio: b.data_envio,
+            data_associacao: b.data_associacao,
+            sou_eu: meu,
+            quem_enviou: podeVer ? `${b.solicitante_nome} ${b.solicitante_sobrenome}`.trim() : null,
+            valor: podeVer ? b.valor : null,
+            fornecedor: podeVer ? b.fornecedor_razao_social : null,
+            motivo_da_recusa: podeVer ? b.observacoes_operador : null,
+          };
+        });
+    },
+
     async historico(boletoId) {
       const s = await estado();
       return s.eventos
@@ -686,15 +783,41 @@ export function criarDriverDemo() {
   };
 }
 
+/**
+ * O que falta neste boleto. É a mesma lista da função pendencias_do_boleto do
+ * banco (db/10) — se uma mudar, a outra tem que mudar junto.
+ */
+function pendenciasDe(b) {
+  return [
+    !b.numero_documento && 'número do documento',
+    !b.cc && 'conta bancária',
+    !b.unidade_cnpj && 'unidade de negócio',
+    !b.fornecedor_razao_social && 'fornecedor',
+    b.valor == null && 'valor',
+    !b.vencimento && 'vencimento',
+    !b.departamento && 'departamento',
+  ].filter(Boolean);
+}
+
 /** Acrescenta os campos calculados que a visão do banco entrega de graça. */
 function enfeitar(b) {
   const hoje = new Date().toISOString().slice(0, 10);
   const dias = Math.round((new Date(b.vencimento) - new Date(hoje)) / 86400000);
+  const pendencias = pendenciasDe(b);
+
   return {
     ...b,
     nome: `${b.solicitante_nome ?? ''} ${b.solicitante_sobrenome ?? ''}`.trim(),
-    documento_rotulo: `${b.tipo_documento}-${b.numero_documento}`,
-    dias_para_vencer: dias,
-    situacao_vencimento: dias < 0 ? 'vencido' : dias <= 3 ? 'vence_em_breve' : 'em_dia',
+    documento_rotulo: `${b.tipo_documento}-${b.numero_documento ?? 's/nº'}`,
+    dias_para_vencer: b.vencimento ? dias : null,
+    situacao_vencimento: !b.vencimento
+      ? 'sem_data'
+      : dias < 0 ? 'vencido' : dias <= 3 ? 'vence_em_breve' : 'em_dia',
+    pendencias,
+    qtd_pendencias: pendencias.length,
+    sinal_revisao: pendencias.length
+      ? 'incompleto'
+      : b.extracao_confianca !== 'alta' ? 'conferir' : 'ok',
+    novidade_para_solicitante: !b.visto_pelo_solicitante_em && b.status !== 'pendente',
   };
 }

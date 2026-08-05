@@ -29,6 +29,10 @@ import {
   pedirTexto, aguardarPausa,
 } from './ui.js';
 import parser from './boleto-parser.js';
+import {
+  buscarEmpresas, acharEmpresa, contasDaEmpresa, empresaPorDocumento,
+  preencherSelectContas, formatarDocumento,
+} from './contas.js';
 
 const el = (id) => document.getElementById(id);
 
@@ -240,7 +244,7 @@ async function carregarTabela({ silencioso = false } = {}) {
     corpo.innerHTML = Array.from({ length: 5 })
       .map(
         () =>
-          `<tr>${Array.from({ length: 13 })
+          `<tr>${Array.from({ length: 14 })
             .map(() => '<td><div class="esqueleto"></div></td>')
             .join('')}</tr>`
       )
@@ -264,7 +268,7 @@ async function carregarTabela({ silencioso = false } = {}) {
     if (!linhas.length) {
       const filtrando = estado.busca || estado.status !== 'todos';
       corpo.innerHTML = `
-        <tr><td colspan="13">
+        <tr><td colspan="14">
           <div class="estado-vazio">
             <div class="estado-vazio__icone" data-icone="documento"></div>
             <h3>${filtrando ? 'Nada encontrado com esses filtros' : `Nenhuma ${estado.tipo === 'NF' ? 'nota fiscal' : 'medição'} na fila`}</h3>
@@ -295,11 +299,50 @@ async function carregarTabela({ silencioso = false } = {}) {
     });
   } catch (erro) {
     console.error(erro);
-    corpo.innerHTML = `<tr><td colspan="13">
+    corpo.innerHTML = `<tr><td colspan="14">
       <div class="aviso aviso--erro" style="margin:16px;">${ICONES.xCirculo}
         <div><span class="aviso__titulo">Não consegui carregar a fila</span>${escapar(erro.message)}</div>
       </div></td></tr>`;
   }
+}
+
+/**
+ * O sinal de revisão que a chefia pediu.
+ *
+ * O valor vem calculado do banco (coluna sinal_revisao da visão), então a tela
+ * não decide nada — só pinta. Isso importa: se a regra estivesse aqui, ela
+ * discordaria da regra que barra a associação, e um dia alguém veria verde num
+ * boleto que o banco recusa.
+ *
+ *   incompleto  falta dado. Não dá para associar. Vermelho.
+ *   conferir    completo, mas o dígito verificador não fechou. Abra o PDF.
+ *   ok          completo e conferido pela matemática do código de barras.
+ */
+function celulaDeRevisao(b) {
+  const pendencias = b.pendencias ?? [];
+
+  const mapa = {
+    incompleto: {
+      icone: ICONES.alerta,
+      classe: 'sinal-revisao--incompleto',
+      titulo: `Falta preencher: ${pendencias.join(', ')}`,
+    },
+    conferir: {
+      icone: ICONES.olho,
+      classe: 'sinal-revisao--conferir',
+      titulo: 'Os dados não vieram conferidos pelo dígito verificador. Abra o PDF e confira.',
+    },
+    ok: {
+      icone: ICONES.checkCirculo,
+      classe: 'sinal-revisao--ok',
+      titulo: 'Completo, e o código de barras fecha no dígito verificador.',
+    },
+  };
+
+  const s = mapa[b.sinal_revisao] ?? mapa.conferir;
+  const contador = pendencias.length ? `<span class="sinal-revisao__conta">${pendencias.length}</span>` : '';
+
+  return `<span class="sinal-revisao ${s.classe}" title="${escapar(s.titulo)}">${s.icone}${contador}</span>`;
 }
 
 function montarLinha(b) {
@@ -324,7 +367,10 @@ function montarLinha(b) {
     b.status === 'associado'
       ? `<button class="acao-icone" data-acao="detalhes" data-id="${b.id}" title="Ver detalhes">${ICONES.olho}</button>
          <button class="acao-icone" data-acao="reabrir" data-id="${b.id}" title="Desfazer associação">${ICONES.desfazer}</button>`
-      : `<button class="acao-icone acao-icone--ok" data-acao="associar" data-id="${b.id}" title="Associar">${ICONES.checkCirculo}</button>
+      : `<button class="acao-icone" data-acao="completar" data-id="${b.id}"
+                 title="${b.qtd_pendencias ? 'Preencher o que falta' : 'Revisar os dados'}">${ICONES.documento}</button>
+         <button class="acao-icone acao-icone--ok" data-acao="associar" data-id="${b.id}"
+                 title="Associar">${ICONES.checkCirculo}</button>
          <button class="acao-icone" data-acao="detalhes" data-id="${b.id}" title="Ver detalhes">${ICONES.olho}</button>
          <button class="acao-icone" data-acao="recusar" data-id="${b.id}" title="Recusar e devolver">${ICONES.xCirculo}</button>`;
 
@@ -345,9 +391,11 @@ function montarLinha(b) {
       </button>
     </td>
 
+    <td>${celulaDeRevisao(b)}</td>
+
     <td>
       <div class="celula-duas-linhas" style="min-width:96px;">
-        <span class="celula-duas-linhas__principal">${escapar(b.documento_rotulo ?? `${b.tipo_documento}-${b.numero_documento}`)}</span>
+        <span class="celula-duas-linhas__principal">${escapar(b.documento_rotulo ?? `${b.tipo_documento}-${b.numero_documento ?? 's/nº'}`)}</span>
         ${b.documento_regularizado ? '' : '<span class="celula-duas-linhas__secundaria">não regularizado</span>'}
       </div>
     </td>
@@ -445,6 +493,7 @@ function ligarAcoesDaTabela() {
           case 'associar': return associar(boleto);
           case 'recusar': return recusar(boleto);
           case 'reabrir': return reabrir(boleto);
+          case 'completar': return completar(boleto);
           case 'detalhes': return verDetalhes(boleto);
         }
       });
@@ -489,6 +538,13 @@ async function copiarCodigo(boleto) {
 }
 
 async function associar(boleto) {
+  // Boleto incompleto não pode ser associado (o banco recusa). Em vez de
+  // mostrar o erro e deixar a pessoa adivinhar, abrimos o formulário já.
+  if (boleto.qtd_pendencias > 0) {
+    avisar(`Falta preencher: ${(boleto.pendencias ?? []).join(', ')}.`, 'atencao', 7000);
+    return completar(boleto);
+  }
+
   const alertas = [];
   if (!boleto.documento_regularizado) {
     alertas.push(`O solicitante marcou a ${boleto.tipo_documento} como NÃO regularizada.`);
@@ -554,6 +610,212 @@ async function reabrir(boleto) {
   } catch (erro) {
     avisar(erro.message, 'erro', 8000);
   }
+}
+
+/* ========================================================================== *
+ * Completar o boleto — o trabalho que saiu do cliente e veio para cá
+ * ========================================================================== *
+ * O cliente agora só entrega o arquivo. O que o leitor não conseguiu extrair
+ * fica em branco, e é aqui que se preenche.
+ *
+ * A conta bancária é o caso mais importante: 69% das empresas do grupo têm mais
+ * de uma conta ativa (a SERENA GERAÇÃO tem 20), então não existe jeito de
+ * adivinhar. Escolher é decisão da operação, e é por isso que este formulário
+ * existe.
+ *
+ * O que estiver preenchido vem preenchido. Campos em branco ganham um contorno
+ * laranja, para o olho ir direto no que falta.
+ */
+async function completar(boleto) {
+  const pendentes = new Set(boleto.pendencias ?? []);
+  const falta = (nome) => (pendentes.has(nome) ? ' campo--falta' : '');
+
+  const departamentos = await dados.listarDepartamentos().catch(() => []);
+
+  const corpo = `
+    <div class="aviso aviso--${boleto.qtd_pendencias ? 'atencao' : 'info'}" style="margin-bottom:18px;">
+      ${boleto.qtd_pendencias ? ICONES.alerta : ICONES.info}
+      <div>
+        ${
+          boleto.qtd_pendencias
+            ? `<span class="aviso__titulo">Falta preencher ${boleto.qtd_pendencias} item(ns)</span>
+               ${escapar((boleto.pendencias ?? []).join(', '))}.`
+            : `<span class="aviso__titulo">Nada obrigatório em falta</span>
+               Você ainda pode corrigir qualquer campo antes de associar.`
+        }
+        ${
+          boleto.extracao_confianca !== 'alta'
+            ? '<br />A leitura não fechou no dígito verificador — vale abrir o PDF e comparar.'
+            : ''
+        }
+      </div>
+    </div>
+
+    <div class="grupo-campos">
+      <div class="campo campo--largo${falta('unidade de negócio')}">
+        <label class="campo__rotulo" for="c-empresa">Unidade de negócio <span class="obrigatorio">*</span></label>
+        <input type="search" id="c-empresa" autocomplete="off"
+               placeholder="Nome ou CNPJ da empresa"
+               value="${escapar(boleto.unidade_negocio ?? '')}" />
+        <span class="campo__dica" id="c-empresa-dica">
+          ${boleto.unidade_cnpj ? 'Veio do CNPJ lido no boleto: ' + escapar(fmtCnpj(boleto.unidade_cnpj)) : 'O boleto não trouxe um CNPJ do grupo.'}
+        </span>
+        <div class="resultados-busca oculto" id="c-resultados"></div>
+      </div>
+
+      <div class="campo campo--largo${falta('conta bancária')}">
+        <label class="campo__rotulo" for="c-conta">Conta bancária (CC) <span class="obrigatorio">*</span></label>
+        <select id="c-conta"><option value="">Escolha a empresa primeiro</option></select>
+        <span class="campo__dica" id="c-conta-dica"></span>
+      </div>
+
+      <div class="campo${falta('número do documento')}">
+        <label class="campo__rotulo" for="c-numero">Nº do documento <span class="obrigatorio">*</span></label>
+        <input type="text" id="c-numero" value="${escapar(boleto.numero_documento ?? '')}" />
+      </div>
+
+      <div class="campo${falta('departamento')}">
+        <label class="campo__rotulo" for="c-departamento">Departamento <span class="obrigatorio">*</span></label>
+        <select id="c-departamento">
+          <option value="">Selecione</option>
+          ${departamentos
+            .map((d) => `<option value="${escapar(d)}" ${d === boleto.departamento ? 'selected' : ''}>${escapar(d)}</option>`)
+            .join('')}
+        </select>
+      </div>
+
+      <div class="campo campo--largo${falta('fornecedor')}">
+        <label class="campo__rotulo" for="c-fornecedor">Fornecedor <span class="obrigatorio">*</span></label>
+        <input type="text" id="c-fornecedor" value="${escapar(boleto.fornecedor_razao_social ?? '')}" />
+      </div>
+
+      <div class="campo">
+        <label class="campo__rotulo" for="c-fornecedor-cnpj">CNPJ do fornecedor</label>
+        <input type="text" id="c-fornecedor-cnpj"
+               value="${escapar(boleto.fornecedor_cnpj ? fmtCnpj(boleto.fornecedor_cnpj) : '')}" />
+      </div>
+
+      <div class="campo${falta('valor')}">
+        <label class="campo__rotulo" for="c-valor">Valor <span class="obrigatorio">*</span></label>
+        <input type="text" id="c-valor" inputmode="decimal"
+               value="${boleto.valor != null ? String(boleto.valor).replace('.', ',') : ''}" />
+      </div>
+
+      <div class="campo${falta('vencimento')}">
+        <label class="campo__rotulo" for="c-vencimento">Vencimento <span class="obrigatorio">*</span></label>
+        <input type="date" id="c-vencimento" value="${escapar(boleto.vencimento ?? '')}" />
+      </div>
+
+      <div class="campo campo--largo">
+        <label class="opcao-radio" style="display:inline-flex;">
+          <input type="checkbox" id="c-regularizado" ${boleto.documento_regularizado ? 'checked' : ''} />
+          Confirmo que o documento está regularizado
+        </label>
+        <span class="campo__dica">
+          ${boleto.tipo_documento === 'MD'
+            ? 'MD precisa estar aprovada e com a forma de pagamento atualizada.'
+            : 'NF precisa estar escriturada e com a forma de pagamento atualizada.'}
+        </span>
+      </div>
+    </div>`;
+
+  const { elemento, fechar } = abrirModal({
+    titulo: `Completar o boleto #${boleto.numero_protocolo}`,
+    corpoHtml: corpo,
+    largo: true,
+    rodapeHtml: `
+      <button class="botao botao--contorno" data-acao="ver-pdf">Abrir o PDF</button>
+      <button class="botao botao--fantasma" data-acao="fechar-completar">Cancelar</button>
+      <button class="botao botao--principal" data-acao="salvar-completar">Salvar</button>`,
+  });
+
+  const q = (id) => elemento.querySelector(`#${id}`);
+  let empresaEscolhida = boleto.unidade_cnpj ?? null;
+
+  async function carregarContasDaEmpresa(documento, contaAtual) {
+    const contas = await contasDaEmpresa(documento);
+    preencherSelectContas(q('c-conta'), contas, contaAtual);
+    q('c-conta-dica').textContent =
+      contas.length === 1
+        ? 'Esta empresa tem uma conta ativa só, e ela já está selecionada.'
+        : `${contas.length} contas ativas. Escolha a que vai pagar este boleto.`;
+  }
+
+  if (empresaEscolhida) {
+    const emp = await empresaPorDocumento(empresaEscolhida);
+    if (emp) {
+      q('c-empresa').value = emp.razaoSocial;
+      await carregarContasDaEmpresa(empresaEscolhida, boleto.cc);
+    }
+  }
+
+  // Busca de empresa, com os romanos normalizados (ver contas.js)
+  q('c-empresa').addEventListener(
+    'input',
+    aguardarPausa(async () => {
+      const termo = q('c-empresa').value.trim();
+      const lista = q('c-resultados');
+      if (termo.length < 2) return lista.classList.add('oculto');
+
+      const achadas = await buscarEmpresas(termo, 8);
+      lista.classList.remove('oculto');
+      lista.innerHTML = achadas.length
+        ? achadas
+            .map(
+              (e) => `<button type="button" class="resultados-busca__item" data-doc="${escapar(e.documento)}">
+                        <span class="resultados-busca__nome">${escapar(e.razaoSocial)}</span>
+                        <span class="resultados-busca__meta">${escapar(formatarDocumento(e))} ·
+                          ${e.contas.filter((c) => c.ativa).length} conta(s)</span>
+                      </button>`
+            )
+            .join('')
+        : '<div class="resultados-busca__vazio">Nenhuma empresa encontrada.</div>';
+
+      lista.querySelectorAll('[data-doc]').forEach((botao) => {
+        botao.addEventListener('click', async () => {
+          empresaEscolhida = botao.dataset.doc;
+          const emp = await empresaPorDocumento(empresaEscolhida);
+          q('c-empresa').value = emp?.razaoSocial ?? '';
+          q('c-empresa-dica').textContent = formatarDocumento(emp);
+          lista.classList.add('oculto');
+          await carregarContasDaEmpresa(empresaEscolhida, null);
+        });
+      });
+    }, 220)
+  );
+
+  elemento.querySelector('[data-acao=fechar-completar]').addEventListener('click', fechar);
+  elemento.querySelector('[data-acao=ver-pdf]').addEventListener('click', (ev) =>
+    baixarArquivo(boleto, ev.currentTarget)
+  );
+
+  elemento.querySelector('[data-acao=salvar-completar]').addEventListener('click', async (ev) => {
+    const paraNumero = (t) => {
+      const n = Number(String(t).replace(/\s/g, '').replace(/\./g, '').replace(',', '.'));
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+
+    try {
+      await comBotaoOcupado(ev.currentTarget, 'Salvando...', () =>
+        dados.completarBoleto(boleto.id, {
+          conta: q('c-conta').value || null,
+          empresaDocumento: empresaEscolhida,
+          numeroDocumento: q('c-numero').value.trim() || null,
+          valor: paraNumero(q('c-valor').value),
+          vencimento: q('c-vencimento').value || null,
+          fornecedor: q('c-fornecedor').value.trim() || null,
+          fornecedorCnpj: q('c-fornecedor-cnpj').value.replace(/\D+/g, '') || null,
+          departamento: q('c-departamento').value || null,
+          regularizado: q('c-regularizado').checked,
+        })
+      );
+      avisar('Dados salvos.', 'ok');
+      fechar();
+      await Promise.all([atualizarKpis(), carregarTabela({ silencioso: true })]);
+    } catch (erro) {
+      avisar(erro.message, 'erro', 9000);
+    }
+  });
 }
 
 /* ========================================================================== *

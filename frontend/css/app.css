@@ -1790,41 +1790,26 @@ select[aria-invalid='true']:focus {
 .trilha__item--feito .trilha__rotulo { color: var(--cinza-70); }
 
 /* ------------------------------------------------------------ etapas ----- */
-/* --------------------------------------------------------------------------
- * UMA ETAPA POR VEZ, NO MESMO LUGAR
- * --------------------------------------------------------------------------
- * Antes as oito etapas ficavam empilhadas: a atual aberta, as anteriores
- * resumidas numa linha e as seguintes acinzentadas. Mostrava o tamanho da
- * tarefa, mas fazia a página crescer e a pessoa rolar para achar onde estava.
- *
- * Agora só a etapa atual existe na tela, sempre na mesma posição. Quem dá a
- * noção de progresso é a trilha no topo, que é o lugar certo para isso.
- *
- * A regra é uma linha: tudo escondido, menos a ativa. Não precisei mexer em
- * JavaScript nenhum porque as classes já eram trocadas do jeito certo.
- * -------------------------------------------------------------------------- */
 .etapa {
-  display: none;
   background: var(--branco);
-  border: 1px solid var(--coral-borda);
+  border: 1px solid var(--cinza-15);
   border-radius: var(--raio-g);
-  box-shadow: var(--sombra-2);
+  margin-bottom: 12px;
+  transition: box-shadow var(--transicao), border-color var(--transicao),
+              opacity var(--transicao);
 }
 
 .etapa--ativa {
-  display: block;
-  /* Uma aparição curta para o olho registrar que o painel trocou. Sem isso a
-     mudança é instantânea e dá a impressão de que nada aconteceu. */
-  animation: etapa-entra 180ms ease-out;
+  border-color: var(--coral-borda);
+  box-shadow: var(--sombra-2);
 }
 
-@keyframes etapa-entra {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+.etapa--concluida { background: var(--cinza-4); }
 
-@media (prefers-reduced-motion: reduce) {
-  .etapa--ativa { animation: none; }
+.etapa--bloqueada {
+  opacity: 0.5;
+  pointer-events: none;
+  background: var(--cinza-4);
 }
 
 .etapa__topo {
@@ -2169,3 +2154,217 @@ select[aria-invalid='true']:focus {
 .selo-lido--atencao { background: var(--alerta-suave); color: #8a5a12; }
 
 .cartao-empresa__nota--atencao { color: #8a5a12; }
+
+/* ------------------------------------------- aviso de boleto repetido ---- */
+.duplicidade__lista {
+  margin: 10px 0 8px;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.duplicidade__motivo {
+  margin-top: 4px;
+  padding: 7px 10px;
+  border-radius: var(--raio-p);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+}
+
+/* ==========================================================================
+ * VISÃO DO CLIENTE — cartão único com vários boletos
+ * ========================================================================== */
+
+.cartao--envio { padding: 24px; }
+
+.divisor-cartao {
+  border: none;
+  border-top: 1px solid var(--cinza-15);
+  margin: 22px 0;
+}
+
+.campo__opcional {
+  margin-left: 6px;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--cinza-50);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+/* -------------------------------------------- a lista de arquivos soltos -- */
+.lista-boletos { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+
+.lista-boletos__item {
+  border: 1px solid var(--cinza-15);
+  border-left-width: 3px;
+  border-radius: var(--raio-m);
+  background: var(--branco);
+  overflow: hidden;
+}
+.lista-boletos__item--ok      { border-left-color: var(--verde); }
+.lista-boletos__item--atencao { border-left-color: var(--alerta); }
+.lista-boletos__item--erro    { border-left-color: var(--erro); }
+.lista-boletos__item--neutro  { border-left-color: var(--cinza-30); }
+
+.lista-boletos__cabeca {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 14px;
+}
+
+.lista-boletos__selo {
+  display: grid;
+  place-items: center;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--raio-total);
+}
+.lista-boletos__selo svg { width: 15px; height: 15px; }
+.lista-boletos__selo--ok      { background: var(--verde-suave);  color: #1c7a60; }
+.lista-boletos__selo--atencao { background: var(--alerta-suave); color: #8a5a12; }
+.lista-boletos__selo--erro    { background: var(--erro-suave);   color: var(--erro); }
+.lista-boletos__selo--neutro  { background: var(--cinza-8);      color: var(--cinza-50); }
+
+.lista-boletos__nome {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--grafite-forte);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lista-boletos__nome small { margin-left: 7px; font-weight: 400; color: var(--cinza-50); }
+
+.lista-boletos__estado {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  color: var(--cinza-50);
+  text-align: right;
+}
+
+/* os dados lidos, em grade compacta */
+.lista-boletos__dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 16px;
+  padding: 0 14px 13px 51px;
+  border-top: 1px solid var(--cinza-8);
+  padding-top: 12px;
+}
+
+.lista-boletos__dado--largo { grid-column: 1 / -1; }
+
+.lista-boletos__rotulo {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cinza-50);
+  margin-bottom: 2px;
+}
+
+.lista-boletos__valor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--grafite-forte);
+}
+.lista-boletos__valor em { color: var(--cinza-50); font-size: 12px; }
+.lista-boletos__valor code { font-size: 11px; letter-spacing: -0.01em; }
+.lista-boletos__valor small { color: var(--cinza-50); }
+
+.lista-boletos__dado--destaque .lista-boletos__valor {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lista-boletos__nota {
+  display: flex;
+  gap: 9px;
+  padding: 10px 14px 12px 51px;
+  border-top: 1px solid var(--cinza-8);
+  background: var(--cinza-4);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--cinza-70);
+}
+.lista-boletos__nota svg { flex: 0 0 15px; width: 15px; height: 15px; margin-top: 2px; }
+
+/* ------------------------------------------------ aviso de novidade ------ */
+.aviso--novidade { align-items: center; margin-bottom: 22px; }
+.aviso--novidade .botao { flex: 0 0 auto; margin-left: auto; }
+.aviso--novidade ul { margin: 6px 0 0; padding-left: 18px; }
+
+.ponto-novidade {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: var(--raio-total);
+  background: var(--coral);
+  vertical-align: middle;
+}
+
+.linha--novidade { background: var(--coral-suave) !important; }
+
+/* --------------------------------------- Meus boletos em largura total -- */
+/* Antes a tabela vivia num container estreito e precisava de rolagem lateral
+   com as laterais vazias. Agora ela usa o espaço que já existia. */
+.tabela--meus { min-width: 100%; }
+
+@media (max-width: 1100px) {
+  .tabela--meus { min-width: 980px; }
+}
+
+@media (max-width: 700px) {
+  .lista-boletos__dados { padding-left: 14px; }
+  .lista-boletos__nota { padding-left: 14px; }
+  .lista-boletos__estado { display: none; }
+  .aviso--novidade { flex-wrap: wrap; }
+  .aviso--novidade .botao { margin-left: 0; width: 100%; }
+}
+
+/* -------------------------------------------- sinal de revisão (operador) */
+.sinal-revisao {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--raio-total);
+}
+.sinal-revisao svg { width: 15px; height: 15px; }
+.sinal-revisao--ok         { background: var(--verde-suave);  color: #1c7a60; }
+.sinal-revisao--conferir   { background: var(--alerta-suave); color: #8a5a12; }
+.sinal-revisao--incompleto { background: var(--erro-suave);   color: var(--erro); }
+
+.sinal-revisao__conta {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: var(--raio-total);
+  background: var(--erro);
+  color: var(--branco);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+/* campo que está faltando, no formulário de completar */
+.campo--falta input,
+.campo--falta select {
+  border-color: var(--alerta);
+  background: var(--alerta-suave);
+}
+.campo--falta .campo__rotulo { color: #8a5a12; }

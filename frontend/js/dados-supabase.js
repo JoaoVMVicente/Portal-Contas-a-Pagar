@@ -73,8 +73,14 @@ const TRADUCOES = [
   [/SEM_PERMISSAO/, 'Esta ação é só para a equipe de operação.'],
   [/FORA_DO_ESCOPO/, 'Este boleto não é do tipo de documento que você trabalha.'],
   [/JA_ASSOCIADO/, 'Este boleto já foi associado.'],
+  [/INCOMPLETO:\s*(.+)/, 'Antes de associar, preencha: $1'],
+  [/EMPRESA_OBRIGATORIA/, 'Escolha a empresa junto com a conta bancária.'],
   [/MOTIVO_OBRIGATORIO/, 'Escreva o motivo. Quem enviou o boleto vai ler isso.'],
-  [/duplicate key.*codbarras/i, 'Este boleto já foi enviado antes. Confira na sua lista.'],
+  [
+    /duplicate key.*codbarras/i,
+    'Este boleto já está no portal — pode ter sido enviado por outra pessoa da equipe. ' +
+      'Fale com a operação antes de tentar de novo.',
+  ],
   [/Failed to fetch|NetworkError/i, 'Sem conexão com o banco. Confira sua internet.'],
 ];
 
@@ -82,7 +88,12 @@ function traduzirErro(erro) {
   const bruto = erro?.message ?? String(erro);
   for (const [padrao, texto] of TRADUCOES) {
     const m = bruto.match(padrao);
-    if (m) return m[1] ? texto.replace('alguns', m[1]) : texto;
+    if (!m) continue;
+    // Se a tradução usa $1, o pedaço capturado entra ali. É como a lista de
+    // pendências do banco chega inteira até a tela.
+    if (texto.includes('$1') && m[1]) return texto.replace('$1', m[1]);
+    if (m[1] && texto.includes('alguns')) return texto.replace('alguns', m[1]);
+    return texto;
   }
   // Mensagens que nós mesmos escrevemos no banco vêm como "CODIGO: texto".
   const nossa = bruto.match(/^[A-Z_]+:\s*(.+)$/);
@@ -591,6 +602,66 @@ export function criarDriverSupabase() {
         .createSignedUrl(boleto.arquivo_caminho, 300);
       if (error) lancar(error);
       return data.signedUrl;
+    },
+
+    /**
+     * Este código de barras já passou pelo portal?
+     *
+     * Chama a função situacao_do_codigo do banco, que roda com poderes
+     * elevados de propósito: o solicitante não pode LER o boleto de outra
+     * pessoa, mas precisa saber que ele existe. A função devolve menos
+     * informação do que tem acesso — ver db/09_duplicidade.sql.
+     */
+    /**
+     * O operador preenche o que faltava. Só mexe no que vier diferente de
+     * nulo, então dá para completar aos poucos.
+     */
+    async completarBoleto(id, dados = {}) {
+      const sb = await obterCliente();
+      const { data, error } = await sb.rpc('completar_boleto', {
+        p_boleto_id: id,
+        p_conta: dados.conta ?? null,
+        p_empresa_doc: dados.empresaDocumento ?? null,
+        p_numero_documento: dados.numeroDocumento ?? null,
+        p_valor: dados.valor ?? null,
+        p_vencimento: dados.vencimento ?? null,
+        p_fornecedor: dados.fornecedor ?? null,
+        p_fornecedor_cnpj: dados.fornecedorCnpj ?? null,
+        p_departamento: dados.departamento ?? null,
+        p_regularizado: dados.regularizado ?? null,
+        p_observacao: dados.observacao ?? null,
+      });
+      if (error) lancar(error);
+      return data;
+    },
+
+    /** O solicitante viu as novidades: apaga o marcador. */
+    async marcarComoVistos() {
+      try {
+        const sb = await obterCliente();
+        const { data, error } = await sb.rpc('marcar_boletos_como_vistos');
+        if (error) throw error;
+        return Number(data ?? 0);
+      } catch (erro) {
+        console.warn('Não consegui marcar como vistos:', erro);
+        return 0;
+      }
+    },
+
+    async situacaoDoCodigo(codigo) {
+      const digitos = String(codigo ?? '').replace(/\D+/g, '');
+      if (digitos.length !== 44) return [];
+
+      try {
+        const sb = await obterCliente();
+        const { data, error } = await sb.rpc('situacao_do_codigo', { p_codigo: digitos });
+        if (error) throw error;
+        return data ?? [];
+      } catch (erro) {
+        // Um aviso que falhou não pode impedir o envio. Registramos e seguimos.
+        console.warn('Não consegui conferir duplicidade:', erro);
+        return [];
+      }
     },
 
     async historico(boletoId) {
