@@ -2368,3 +2368,52 @@ select[aria-invalid='true']:focus {
   background: var(--alerta-suave);
 }
 .campo--falta .campo__rotulo { color: #8a5a12; }
+
+/* --------------------------------------------------------- descartado ---- */
+.selo--descartado {
+  background: var(--cinza-15);
+  color: var(--cinza-70);
+  text-decoration: line-through;
+}
+
+.acao-icone--perigo:hover {
+  background: var(--erro-suave);
+  color: var(--erro);
+}
+
+/* ------------------------------------------- indicador de ordenação ------ */
+.tabela th.ordenando {
+  position: relative;
+  padding-right: 22px;
+}
+
+.tabela th.ordenando::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  margin-top: -2px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 5px solid currentColor;
+  opacity: 0.75;
+}
+
+.tabela th.ordenando--desc::after {
+  border-bottom: none;
+  border-top: 5px solid currentColor;
+}
+
+.selo--sem-data {
+  background: var(--cinza-15);
+  color: var(--cinza-70);
+}
+
+/* ------------------------- por que esta empresa apareceu na busca -------- */
+.resultados-busca__origem {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-style: italic;
+  color: #8a5a12;
+}

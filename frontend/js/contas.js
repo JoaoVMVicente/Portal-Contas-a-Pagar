@@ -237,20 +237,45 @@ export async function buscarEmpresas(termo, limite = 40) {
   const resultado = [];
   for (const e of p.empresas) {
     let pontos = 0;
+    let achouPor = null;
+    let nomeQueCasou = null;
 
-    if (soDigitos.length >= 3 && e.documento.includes(soDigitos)) pontos = 100;
-    else if (chave && e.chaveBusca === chave) pontos = 95;
-    else if (chave && e.chaveBusca.startsWith(chave)) pontos = 80;
-    else if (chave && e.chaveBusca.includes(chave)) pontos = 60;
-    else if (chave && e.nomesAlternativos.some((n) => chaveDeNome(n).includes(chave))) pontos = 50;
+    if (soDigitos.length >= 3 && e.documento.includes(soDigitos)) {
+      pontos = 100;
+      achouPor = 'documento';
+    } else if (chave && e.chaveBusca === chave) {
+      pontos = 95;
+      achouPor = 'nome atual';
+    } else if (chave && e.chaveBusca.startsWith(chave)) {
+      pontos = 80;
+      achouPor = 'nome atual';
+    } else if (chave && e.chaveBusca.includes(chave)) {
+      pontos = 60;
+      achouPor = 'nome atual';
+    } else if (chave && e.razaoSocialJuridica && chaveDeNome(e.razaoSocialJuridica).includes(chave)) {
+      pontos = 55;
+      achouPor = 'nome jurídico';
+      nomeQueCasou = e.razaoSocialJuridica;
+    } else if (chave) {
+      // O nome ANTERIOR. Boleto emitido antes da renomeação chega assim, e sem
+      // isto o operador teria que consultar uma planilha à parte.
+      const anterior = e.nomesAlternativos.find((n) => chaveDeNome(n).includes(chave));
+      if (anterior) {
+        pontos = 50;
+        achouPor = 'nome anterior';
+        nomeQueCasou = anterior;
+      }
+    }
 
-    if (pontos > 0) resultado.push({ empresa: e, pontos });
+    if (pontos > 0) resultado.push({ empresa: e, pontos, achouPor, nomeQueCasou });
   }
 
   return resultado
     .sort((a, b) => b.pontos - a.pontos || a.empresa.razaoSocial.localeCompare(b.empresa.razaoSocial, 'pt-BR'))
     .slice(0, limite)
-    .map((r) => r.empresa);
+    // Devolvemos a empresa com duas marcas a mais, para a tela poder dizer
+    // "encontrada pelo nome anterior: Porto do Parnaíba Energia S.A."
+    .map((r) => ({ ...r.empresa, achouPor: r.achouPor, nomeQueCasou: r.nomeQueCasou }));
 }
 
 /* ========================================================================== *

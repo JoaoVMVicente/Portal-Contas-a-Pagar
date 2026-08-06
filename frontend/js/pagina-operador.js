@@ -871,6 +871,11 @@ async function completar(boleto) {
                         <span class="resultados-busca__nome">${escapar(e.razaoSocial)}</span>
                         <span class="resultados-busca__meta">${escapar(formatarDocumento(e))} ·
                           ${e.contas.filter((c) => c.ativa).length} conta(s)</span>
+                        ${
+                          e.achouPor === 'nome anterior' || e.achouPor === 'nome jurídico'
+                            ? `<span class="resultados-busca__origem">encontrada pelo ${escapar(e.achouPor)}: ${escapar(e.nomeQueCasou)}</span>`
+                            : ''
+                        }
                       </button>`
             )
             .join('')

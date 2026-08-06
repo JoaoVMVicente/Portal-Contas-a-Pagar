@@ -1,5 +1,5 @@
 {
- "geradoEm": "2026-07-29T20:53:31.215Z",
+ "geradoEm": "2026-08-06T12:03:13.584Z",
  "origem": "Mapeamento_Geral_de_Contas_2023_Equipe.xlsx",
  "aba": "BASE GERAL",
  "totais": {
@@ -48,7 +48,8 @@
      "tipoConta": null,
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Arco Energia 6 S.A."
   },
   {
    "documento": "48961178000125",
@@ -78,7 +79,8 @@
      "tipoConta": null,
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Arco Energia 1 S.A."
   },
   {
    "documento": "48961443000175",
@@ -108,7 +110,8 @@
      "tipoConta": null,
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Arco Energia 3 S.A."
   },
   {
    "documento": "48959865000106",
@@ -138,7 +141,8 @@
      "tipoConta": null,
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Arco Energia 5 S.A."
   },
   {
    "documento": "46554453000160",
@@ -168,7 +172,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Arco Energia S.A."
   },
   {
    "documento": "48961132000106",
@@ -200,7 +205,8 @@
      "tipoConta": null,
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Arco Energia T1 S.A."
   },
   {
    "documento": "48960007000181",
@@ -232,14 +238,17 @@
      "tipoConta": null,
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Arco Energia T2 S.A."
   },
   {
    "documento": "23778492000146",
    "documentoTipo": "cnpj",
    "documentoFormatado": "23.778.492/0001-46",
    "razaoSocial": "ASSURUÁ 1 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "CEA I - Centrais Eólicas Assuruá I SPE S.A."
+   ],
    "chaveBusca": "ASSURUA 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1531",
@@ -271,14 +280,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 1 Energia S.A."
   },
   {
    "documento": "19246831000176",
    "documentoTipo": "cnpj",
    "documentoFormatado": "19.246.831/0001-76",
    "razaoSocial": "ASSURUÁ 1 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Assuruá V S.A."
+   ],
    "chaveBusca": "ASSURUA 1 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1551",
@@ -373,14 +385,17 @@
      "tipoConta": null,
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 1 I Energia S.A."
   },
   {
    "documento": "19246799000129",
    "documentoTipo": "cnpj",
    "documentoFormatado": "19.246.799/0001-29",
    "razaoSocial": "ASSURUÁ 1 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Assuruá II S.A."
+   ],
    "chaveBusca": "ASSURUA 1 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1541",
@@ -484,14 +499,17 @@
      "tipoConta": null,
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 1 II Energia S.A."
   },
   {
    "documento": "19246849000178",
    "documentoTipo": "cnpj",
    "documentoFormatado": "19.246.849/0001-78",
    "razaoSocial": "ASSURUÁ 1 III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Assuruá VII S.A."
+   ],
    "chaveBusca": "ASSURUA 1 3 ENERGIA",
    "grupo": "SG",
    "codigo": "1561",
@@ -586,14 +604,17 @@
      "tipoConta": null,
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 1 III Energia S.A."
   },
   {
    "documento": "24274124000123",
    "documentoTipo": "cnpj",
    "documentoFormatado": "24.274.124/0001-23",
    "razaoSocial": "ASSURUÁ 2 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "CEA II - Centrais Eólicas Assuruá II SPE S.A."
+   ],
    "chaveBusca": "ASSURUA 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1571",
@@ -643,14 +664,17 @@
      "tipoConta": "CONTA ENCERRADA",
      "ativa": false
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 Energia S.A."
   },
   {
    "documento": "21544084000102",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.544.084/0001-02",
    "razaoSocial": "ASSURUÁ 2 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Assuruá III S.A."
+   ],
    "chaveBusca": "ASSURUA 2 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1671",
@@ -727,14 +751,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 I Energia S.A."
   },
   {
    "documento": "21544129000130",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.544.129/0001-30",
    "razaoSocial": "ASSURUÁ 2 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Assuruá IV S.A."
+   ],
    "chaveBusca": "ASSURUA 2 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1581",
@@ -811,14 +838,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 II Energia S.A."
   },
   {
    "documento": "21543971000158",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.543.971/0001-58",
    "razaoSocial": "ASSURUÁ 2 III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Capoeiras III S.A."
+   ],
    "chaveBusca": "ASSURUA 2 3 ENERGIA",
    "grupo": "SG",
    "codigo": "1591",
@@ -895,14 +925,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 III Energia S.A."
   },
   {
    "documento": "21541973000108",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.541.973/0001-08",
    "razaoSocial": "ASSURUÁ 2 IV ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Curral de Pedras I S.A."
+   ],
    "chaveBusca": "ASSURUA 2 4 ENERGIA",
    "grupo": "SG",
    "codigo": "1601",
@@ -979,14 +1012,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 IV Energia S.A."
   },
   {
    "documento": "21544159000147",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.544.159/0001-47",
    "razaoSocial": "ASSURUÁ 2 IX ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Laranjeiras II S.A."
+   ],
    "chaveBusca": "ASSURUA 2 9 ENERGIA",
    "grupo": "SG",
    "codigo": "1651",
@@ -1081,14 +1117,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 IX Energia S.A."
   },
   {
    "documento": "21544255000195",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.544.255/0001-95",
    "razaoSocial": "ASSURUÁ 2 V ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Curral de Pedras II S.A."
+   ],
    "chaveBusca": "ASSURUA 2 5 ENERGIA",
    "grupo": "SG",
    "codigo": "1611",
@@ -1165,14 +1204,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 V Energia S.A."
   },
   {
    "documento": "21544216000198",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.544.216/0001-98",
    "razaoSocial": "ASSURUÁ 2 VI ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Diamante II S.A."
+   ],
    "chaveBusca": "ASSURUA 2 6 ENERGIA",
    "grupo": "SG",
    "codigo": "1621",
@@ -1249,14 +1291,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 VI Energia S.A."
   },
   {
    "documento": "21543994000162",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.543.994/0001-62",
    "razaoSocial": "ASSURUÁ 2 VII ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Diamante III S.A."
+   ],
    "chaveBusca": "ASSURUA 2 7 ENERGIA",
    "grupo": "SG",
    "codigo": "1631",
@@ -1333,14 +1378,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 VII Energia S.A."
   },
   {
    "documento": "21544025000126",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.544.025/0001-26",
    "razaoSocial": "ASSURUÁ 2 VIII ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Laranjeiras I S.A."
+   ],
    "chaveBusca": "ASSURUA 2 8 ENERGIA",
    "grupo": "SG",
    "codigo": "1641",
@@ -1417,14 +1465,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 VIII Energia S.A."
   },
   {
    "documento": "21544060000145",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.544.060/0001-45",
    "razaoSocial": "ASSURUÁ 2 X ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Laranjeiras V S.A."
+   ],
    "chaveBusca": "ASSURUA 2 10 ENERGIA",
    "grupo": "SG",
    "codigo": "1661",
@@ -1510,14 +1561,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 2 X Energia S.A."
   },
   {
    "documento": "24269491000139",
    "documentoTipo": "cnpj",
    "documentoFormatado": "24.269.491/0001-39",
    "razaoSocial": "ASSURUÁ 3 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "CEA III Centrais Eólicas Assuruá III SPE S/A"
+   ],
    "chaveBusca": "ASSURUA 3 ENERGIA",
    "grupo": "SG",
    "codigo": "1901",
@@ -1549,14 +1603,17 @@
      "tipoConta": "CONTA ENCERRADA",
      "ativa": false
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 3 Energia S.A."
   },
   {
    "documento": "21816037000162",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.816.037/0001-62",
    "razaoSocial": "ASSURUÁ 3 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Laranjeiras III S.A."
+   ],
    "chaveBusca": "ASSURUA 3 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1921",
@@ -1624,14 +1681,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 3 I Energia S.A."
   },
   {
    "documento": "21815934000151",
    "documentoTipo": "cnpj",
    "documentoFormatado": "21.815.934/0001-51",
    "razaoSocial": "ASSURUÁ 3 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Laranjeiras IX S.A."
+   ],
    "chaveBusca": "ASSURUA 3 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1911",
@@ -1699,14 +1759,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 3 II Energia S.A."
   },
   {
    "documento": "38286323000166",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.286.323/0001-66",
    "razaoSocial": "ASSURUÁ 4 E 5 HOLDING ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Assuruá 5 Energia S.A."
+   ],
    "chaveBusca": "ASSURUA 4 E 5 HOLDING ENERGIA",
    "grupo": "SD",
    "codigo": "2001",
@@ -1828,14 +1891,17 @@
      "tipoConta": "RESERVA DE COMPLEMENTAÇÃO DO ICSD",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 4 e 5 Holding Energia S.A."
   },
   {
    "documento": "38112927000196",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.112.927/0001-96",
    "razaoSocial": "ASSURUÁ 4 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 5 S.A."
+   ],
    "chaveBusca": "ASSURUA 4 1 ENERGIA",
    "grupo": "SD",
    "codigo": "1961",
@@ -1903,14 +1969,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 4 I Energia S.A."
   },
   {
    "documento": "38286402000177",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.286.402/0001-77",
    "razaoSocial": "ASSURUÁ 4 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 8 S.A."
+   ],
    "chaveBusca": "ASSURUA 4 2 ENERGIA",
    "grupo": "SD",
    "codigo": "1991",
@@ -1978,14 +2047,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 4 II Energia S.A."
   },
   {
    "documento": "38112944000123",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.112.944/0001-23",
    "razaoSocial": "ASSURUÁ 4 III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 7 S.A."
+   ],
    "chaveBusca": "ASSURUA 4 3 ENERGIA",
    "grupo": "SD",
    "codigo": "1981",
@@ -2053,14 +2125,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 4 III Energia S.A."
   },
   {
    "documento": "38050924000175",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.050.924/0001-75",
    "razaoSocial": "ASSURUÁ 4 IV ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 6 S.A."
+   ],
    "chaveBusca": "ASSURUA 4 4 ENERGIA",
    "grupo": "SD",
    "codigo": "1971",
@@ -2128,14 +2203,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 4 IV Energia S.A."
   },
   {
    "documento": "38249067000137",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.249.067/0001-37",
    "razaoSocial": "ASSURUÁ 4 SUBHOLDING I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "CEA IV - Centrais Eólicas Assuruá IV SPE S.A."
+   ],
    "chaveBusca": "ASSURUA 4 SUBHOLDING 1 ENERGIA",
    "grupo": "SD",
    "codigo": "2341",
@@ -2203,14 +2281,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 4 Subholding I Energia S.A."
   },
   {
    "documento": "47124064000168",
    "documentoTipo": "cnpj",
    "documentoFormatado": "47.124.064/0001-68",
    "razaoSocial": "ASSURUÁ 4 SUBHOLDING II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 21 S.A."
+   ],
    "chaveBusca": "ASSURUA 4 SUBHOLDING 2 ENERGIA",
    "grupo": "SD",
    "codigo": "2671",
@@ -2251,14 +2332,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 4 Subholding II Energia S.A."
   },
   {
    "documento": "38049586000151",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.049.586/0001-51",
    "razaoSocial": "ASSURUÁ 4 V ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 3 S.A."
+   ],
    "chaveBusca": "ASSURUA 4 5 ENERGIA",
    "grupo": "SD",
    "codigo": "1941",
@@ -2326,14 +2410,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 4 V Energia S.A."
   },
   {
    "documento": "38049608000183",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.049.608/0001-83",
    "razaoSocial": "ASSURUÁ 4 VI ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 2 S.A."
+   ],
    "chaveBusca": "ASSURUA 4 6 ENERGIA",
    "grupo": "SD",
    "codigo": "1931",
@@ -2410,14 +2497,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 4 VI Energia S.A."
   },
   {
    "documento": "38297095000120",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.297.095/0001-20",
    "razaoSocial": "ASSURUÁ 5 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 10 S.A."
+   ],
    "chaveBusca": "ASSURUA 5 1 ENERGIA",
    "grupo": "SD",
    "codigo": "2011",
@@ -2503,14 +2593,17 @@
      "tipoConta": "RESERVA DO SERVIÇO DA DÍVIDA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 5 I Energia S.A."
   },
   {
    "documento": "38297116000107",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.297.116/0001-07",
    "razaoSocial": "ASSURUÁ 5 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 11 S.A."
+   ],
    "chaveBusca": "ASSURUA 5 2 ENERGIA",
    "grupo": "SD",
    "codigo": "2021",
@@ -2596,14 +2689,17 @@
      "tipoConta": "RESERVA DO SERVIÇO DA DÍVIDA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 5 II Energia S.A."
   },
   {
    "documento": "35497092000141",
    "documentoTipo": "cnpj",
    "documentoFormatado": "35.497.092/0001-41",
    "razaoSocial": "ASSURUÁ 5 III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Delta 9 Energia S.A."
+   ],
    "chaveBusca": "ASSURUA 5 3 ENERGIA",
    "grupo": "SD",
    "codigo": "1891",
@@ -2689,7 +2785,8 @@
      "tipoConta": "RESERVA DO SERVIÇO DA DÍVIDA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 5 III Energia S.A."
   },
   {
    "documento": "42929694000196",
@@ -2809,14 +2906,17 @@
      "tipoConta": "RESERVA DO SERVIÇO DA DÍVIDA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 5 IV Energia S.A."
   },
   {
    "documento": "38290765000186",
    "documentoTipo": "cnpj",
    "documentoFormatado": "38.290.765/0001-86",
    "razaoSocial": "ASSURUÁ 5 SUBHOLDING ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Assuruá 5 Holding Energia S.A."
+   ],
    "chaveBusca": "ASSURUA 5 SUBHOLDING ENERGIA",
    "grupo": "SD",
    "codigo": "2351",
@@ -2848,7 +2948,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 5 Subholding Energia S.A."
   },
   {
    "documento": "42929707000127",
@@ -2968,7 +3069,8 @@
      "tipoConta": "RESERVA DO SERVIÇO DA DÍVIDA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 5 V Energia S.A."
   },
   {
    "documento": "42931551000119",
@@ -3088,14 +3190,17 @@
      "tipoConta": "RESERVA DO SERVIÇO DA DÍVIDA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 5 VI Energia S.A."
   },
   {
    "documento": "43240763000112",
    "documentoTipo": "cnpj",
    "documentoFormatado": "43.240.763/0001-12",
    "razaoSocial": "ASSURUÁ 6 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "CEA VI - Centrais Eólicas Assuruá VI SPE S.A."
+   ],
    "chaveBusca": "ASSURUA 6 ENERGIA",
    "grupo": "SD",
    "codigo": "2581",
@@ -3118,14 +3223,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá 6 Energia S.A."
   },
   {
    "documento": "10187906000110",
    "documentoTipo": "cnpj",
    "documentoFormatado": "10.187.906/0001-10",
    "razaoSocial": "ASSURUÁ ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "CEA - Centrais Eólicas Assuruá S.A."
+   ],
    "chaveBusca": "ASSURUA ENERGIA",
    "grupo": "SG",
    "codigo": "1521",
@@ -3139,7 +3247,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Assuruá Energia S.A."
   },
   {
    "documento": "15190496000180",
@@ -3286,14 +3395,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Assuruá 5 II"
   },
   {
    "documento": "52222042000170",
    "documentoTipo": "cnpj",
    "documentoFormatado": "52.222.042/0001-70",
    "razaoSocial": "CONSÓRCIO SERENA & CARGILL",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega & Cargill"
+   ],
    "chaveBusca": "CONSORCIO SERENA CARGILL",
    "grupo": "CONS",
    "codigo": "6081",
@@ -3316,7 +3428,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena & Cargill"
   },
   {
    "documento": "60059844000130",
@@ -3337,7 +3450,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena Bahia"
   },
   {
    "documento": "60056790000159",
@@ -3358,7 +3472,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena Bahia II"
   },
   {
    "documento": "60007924000141",
@@ -3379,14 +3494,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena Bahia III"
   },
   {
    "documento": "48438093000167",
    "documentoTipo": "cnpj",
    "documentoFormatado": "48.438.093/0001-67",
    "razaoSocial": "CONSÓRCIO SERENA GD 1",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega GD 1"
+   ],
    "chaveBusca": "CONSORCIO SERENA GD 1",
    "grupo": "CONS",
    "codigo": "6001",
@@ -3409,14 +3527,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 1"
   },
   {
    "documento": "54146558000109",
    "documentoTipo": "cnpj",
    "documentoFormatado": "54.146.558/0001-09",
    "razaoSocial": "CONSÓRCIO SERENA GD 10",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega GD 10"
+   ],
    "chaveBusca": "CONSORCIO SERENA GD 10",
    "grupo": "CONS",
    "codigo": "6111",
@@ -3439,7 +3560,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 10"
   },
   {
    "documento": "53695726000152",
@@ -3469,14 +3591,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 11"
   },
   {
    "documento": "53315473000144",
    "documentoTipo": "cnpj",
    "documentoFormatado": "53.315.473/0001-44",
    "razaoSocial": "CONSÓRCIO SERENA GD 12",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega GD 12"
+   ],
    "chaveBusca": "CONSORCIO SERENA GD 12",
    "grupo": "CONS",
    "codigo": "6091",
@@ -3499,7 +3624,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 12"
   },
   {
    "documento": "57180880000142",
@@ -3529,14 +3655,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 13"
   },
   {
    "documento": "48652438000180",
    "documentoTipo": "cnpj",
    "documentoFormatado": "48.652.438/0001-80",
    "razaoSocial": "CONSÓRCIO SERENA GD 2",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega GD 2"
+   ],
    "chaveBusca": "CONSORCIO SERENA GD 2",
    "grupo": "CONS",
    "codigo": "6011",
@@ -3559,14 +3688,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 2"
   },
   {
    "documento": "48576242000154",
    "documentoTipo": "cnpj",
    "documentoFormatado": "48.576.242/0001-54",
    "razaoSocial": "CONSÓRCIO SERENA GD 3",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega GD 3"
+   ],
    "chaveBusca": "CONSORCIO SERENA GD 3",
    "grupo": "CONS",
    "codigo": "6021",
@@ -3589,7 +3721,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 3"
   },
   {
    "documento": "48471950000120",
@@ -3619,14 +3752,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 4"
   },
   {
    "documento": "48625472000166",
    "documentoTipo": "cnpj",
    "documentoFormatado": "48.625.472/0001-66",
    "razaoSocial": "CONSORCIO SERENA GD 5",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega GD 5"
+   ],
    "chaveBusca": "CONSORCIO SERENA GD 5",
    "grupo": "CONS",
    "codigo": "6041",
@@ -3649,14 +3785,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 5"
   },
   {
    "documento": "48564270000151",
    "documentoTipo": "cnpj",
    "documentoFormatado": "48.564.270/0001-51",
    "razaoSocial": "CONSÓRCIO SERENA GD 6",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega GD 6"
+   ],
    "chaveBusca": "CONSORCIO SERENA GD 6",
    "grupo": "CONS",
    "codigo": "6051",
@@ -3679,14 +3818,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 6"
   },
   {
    "documento": "48728345000192",
    "documentoTipo": "cnpj",
    "documentoFormatado": "48.728.345/0001-92",
    "razaoSocial": "CONSÓRCIO SERENA GD 7",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega GD 7"
+   ],
    "chaveBusca": "CONSORCIO SERENA GD 7",
    "grupo": "CONS",
    "codigo": "6061",
@@ -3709,14 +3851,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 7"
   },
   {
    "documento": "49703024000104",
    "documentoTipo": "cnpj",
    "documentoFormatado": "49.703.024/0001-04",
    "razaoSocial": "CONSÓRCIO SERENA GD 8",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Consórcio Omega GD 8"
+   ],
    "chaveBusca": "CONSORCIO SERENA GD 8",
    "grupo": "CONS",
    "codigo": "6071",
@@ -3739,7 +3884,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 8"
   },
   {
    "documento": "53670255000128",
@@ -3769,7 +3915,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Serena GD 9"
   },
   {
    "documento": "56061802000166",
@@ -3808,14 +3955,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Consórcio Ventos e Águas"
   },
   {
    "documento": "14533540000145",
    "documentoTipo": "cnpj",
    "documentoFormatado": "14.533.540/0001-45",
    "razaoSocial": "DELTA 1 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Delta dos Ventos Energia S.A."
+   ],
    "chaveBusca": "DELTA 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1031",
@@ -3847,14 +3997,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 1 Energia S.A."
   },
   {
    "documento": "14567884000175",
    "documentoTipo": "cnpj",
    "documentoFormatado": "14.567.884/0001-75",
    "razaoSocial": "DELTA 1 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Porto das Barcas Energia S.A."
+   ],
    "chaveBusca": "DELTA 1 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1041",
@@ -3931,14 +4084,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 1 I Energia S.A."
   },
   {
    "documento": "14567883000120",
    "documentoTipo": "cnpj",
    "documentoFormatado": "14.567.883/0001-20",
    "razaoSocial": "DELTA 1 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Porto do Parnaíba Energia S.A."
+   ],
    "chaveBusca": "DELTA 1 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1051",
@@ -4033,14 +4189,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 1 II Energia S.A."
   },
   {
    "documento": "14567882000186",
    "documentoTipo": "cnpj",
    "documentoFormatado": "14.567.882/0001-86",
    "razaoSocial": "DELTA 1 III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Porto Salgado Energia S.A."
+   ],
    "chaveBusca": "DELTA 1 3 ENERGIA",
    "grupo": "SG",
    "codigo": "1061",
@@ -4126,14 +4285,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 1 III Energia S.A."
   },
   {
    "documento": "15190480000178",
    "documentoTipo": "cnpj",
    "documentoFormatado": "15.190.480/0001-78",
    "razaoSocial": "DELTA 2 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Potami Energia S.A"
+   ],
    "chaveBusca": "DELTA 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1141",
@@ -4183,14 +4345,17 @@
      "tipoConta": "RESERVA ESPECIAL DA SUBHOLDING",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 2 Energia S.A."
   },
   {
    "documento": "18501753000146",
    "documentoTipo": "cnpj",
    "documentoFormatado": "18.501.753/0001-46",
    "razaoSocial": "DELTA 2 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Testa Branca I Energia S.A."
+   ],
    "chaveBusca": "DELTA 2 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1151",
@@ -4285,14 +4450,17 @@
      "tipoConta": "CONTA ENCERRADA",
      "ativa": false
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 2 I Energia S.A."
   },
   {
    "documento": "18495534000100",
    "documentoTipo": "cnpj",
    "documentoFormatado": "18.495.534/0001-00",
    "razaoSocial": "DELTA 2 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Testa Branca III Energia S.A."
+   ],
    "chaveBusca": "DELTA 2 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1161",
@@ -4378,14 +4546,17 @@
      "tipoConta": "CONTA ENCERRADA",
      "ativa": false
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 2 II Energia S.A."
   },
   {
    "documento": "09438017000108",
    "documentoTipo": "cnpj",
    "documentoFormatado": "09.438.017/0001-08",
    "razaoSocial": "DELTA 2 III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Porto do Delta Energia S.A."
+   ],
    "chaveBusca": "DELTA 2 3 ENERGIA",
    "grupo": "SG",
    "codigo": "1171",
@@ -4489,14 +4660,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 2 III Energia S.A."
   },
   {
    "documento": "14797436000168",
    "documentoTipo": "cnpj",
    "documentoFormatado": "14.797.436/0001-68",
    "razaoSocial": "DELTA 3 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Energia e Implantação 2 S.A."
+   ],
    "chaveBusca": "DELTA 3 ENERGIA",
    "grupo": "SG",
    "codigo": "1181",
@@ -4627,7 +4801,8 @@
      "tipoConta": "CC PREVISÃO DE DEBENTURES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 3 Energia S.A."
   },
   {
    "documento": "23598517000120",
@@ -4765,7 +4940,8 @@
      "tipoConta": "CC RESERVA SERVIÇO DA DÍVIDA DEBÊNTURES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 3 I Energia S.A."
   },
   {
    "documento": "23598858000103",
@@ -4903,7 +5079,8 @@
      "tipoConta": "CC RESERVA SERVIÇO DA DÍVIDA DEBÊNTURES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 3 II Energia S.A."
   },
   {
    "documento": "23598847000115",
@@ -5050,7 +5227,8 @@
      "tipoConta": "CC RESERVA SERVIÇO DA DÍVIDA DEBÊNTURES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 3 III Energia S.A."
   },
   {
    "documento": "23598842000192",
@@ -5197,7 +5375,8 @@
      "tipoConta": "CC RESERVA SERVIÇO DA DÍVIDA DEBÊNTURES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 3 IV Energia S.A."
   },
   {
    "documento": "23598829000133",
@@ -5335,7 +5514,8 @@
      "tipoConta": "CC RESERVA SERVIÇO DA DÍVIDA DEBÊNTURES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 3 V Energia S.A."
   },
   {
    "documento": "23598831000102",
@@ -5464,7 +5644,8 @@
      "tipoConta": "CC RESERVA SERVIÇO DA DÍVIDA DEBÊNTURES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 3 VI Energia S.A."
   },
   {
    "documento": "23598844000181",
@@ -5602,14 +5783,17 @@
      "tipoConta": "CC RESERVA SERVIÇO DA DÍVIDA DEBÊNTURES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 3 VII Energia S.A."
   },
   {
    "documento": "15190472000121",
    "documentoTipo": "cnpj",
    "documentoFormatado": "15.190.472/0001-21",
    "razaoSocial": "DELTA 3 VIII ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Kalare Energia S.A"
+   ],
    "chaveBusca": "DELTA 3 8 ENERGIA",
    "grupo": "SG",
    "codigo": "1261",
@@ -5740,14 +5924,17 @@
      "tipoConta": "CC RESERVA SERVIÇO DA DÍVIDA DEBÊNTURES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 3 VIII Energia S.A."
   },
   {
    "documento": "29296171000191",
    "documentoTipo": "cnpj",
    "documentoFormatado": "29.296.171/0001-91",
    "razaoSocial": "DELTA 5 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Delta 5 IV Energia S.A."
+   ],
    "chaveBusca": "DELTA 5 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1412",
@@ -5824,14 +6011,17 @@
      "tipoConta": "CONTA CENTRALIZADORA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 5 I Energia S.A."
   },
   {
    "documento": "29303897000104",
    "documentoTipo": "cnpj",
    "documentoFormatado": "29.303.897/0001-04",
    "razaoSocial": "DELTA 5 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Delta 5 V Energia S.A."
+   ],
    "chaveBusca": "DELTA 5 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1413",
@@ -5908,14 +6098,17 @@
      "tipoConta": "CONTA CENTRALIZADORA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 5 II Energia S.A."
   },
   {
    "documento": "29296141000185",
    "documentoTipo": "cnpj",
    "documentoFormatado": "29.296.141/0001-85",
    "razaoSocial": "DELTA 6 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Delta 5 VII Energia S.A."
+   ],
    "chaveBusca": "DELTA 6 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1414",
@@ -5983,14 +6176,17 @@
      "tipoConta": "CONTA CENTRALIZADORA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 6 I Energia S.A."
   },
   {
    "documento": "29296975000190",
    "documentoTipo": "cnpj",
    "documentoFormatado": "29.296.975/0001-90",
    "razaoSocial": "DELTA 6 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Delta 5 IX Energia S.A."
+   ],
    "chaveBusca": "DELTA 6 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1415",
@@ -6058,14 +6254,17 @@
      "tipoConta": "VINCULADA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 6 II Energia S.A."
   },
   {
    "documento": "43460232000135",
    "documentoTipo": "cnpj",
    "documentoFormatado": "43.460.232/0001-35",
    "razaoSocial": "DELTA 7 E 8 HOLDING ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 19 S.A."
+   ],
    "chaveBusca": "DELTA 7 E 8 HOLDING ENERGIA",
    "grupo": "SG",
    "codigo": "2521",
@@ -6079,7 +6278,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 7 e 8 Holding Energia S.A."
   },
   {
    "documento": "30866030000146",
@@ -6202,7 +6402,8 @@
      "tipoConta": "CONTA CENTRALIZADORA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 7 I Energia S.A"
   },
   {
    "documento": "30905225000158",
@@ -6286,7 +6487,8 @@
      "tipoConta": "CONTA CENTRALIZADORA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 7 II Energia S.A"
   },
   {
    "documento": "30853820000197",
@@ -6409,14 +6611,17 @@
      "tipoConta": "CONTA CENTRALIZADORA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta 8 I Energia S.A."
   },
   {
    "documento": "17408132000150",
    "documentoTipo": "cnpj",
    "documentoFormatado": "17.408.132/0001-50",
    "razaoSocial": "DELTA MA I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Delta Energia S.A."
+   ],
    "chaveBusca": "DELTA MA 1 ENERGIA",
    "grupo": "SG",
    "codigo": "1361",
@@ -6430,14 +6635,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta MA I Energia S.A."
   },
   {
    "documento": "18634158000189",
    "documentoTipo": "cnpj",
    "documentoFormatado": "18.634.158/0001-89",
    "razaoSocial": "DELTA MA II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Delta MA Energia S.A."
+   ],
    "chaveBusca": "DELTA MA 2 ENERGIA",
    "grupo": "SG",
    "codigo": "1351",
@@ -6451,14 +6659,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta MA II Energia S.A."
   },
   {
    "documento": "35497089000128",
    "documentoTipo": "cnpj",
    "documentoFormatado": "35.497.089/0001-28",
    "razaoSocial": "DELTA MA III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 9 S.A."
+   ],
    "chaveBusca": "DELTA MA 3 ENERGIA",
    "grupo": "SD",
    "codigo": "1881",
@@ -6472,14 +6683,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta MA III Energia S.A."
   },
   {
    "documento": "30895796000159",
    "documentoTipo": "cnpj",
    "documentoFormatado": "30.895.796/0001-59",
    "razaoSocial": "DELTA MA IV ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 10 S.A."
+   ],
    "chaveBusca": "DELTA MA 4 ENERGIA",
    "grupo": "SD",
    "codigo": "1491",
@@ -6520,14 +6734,17 @@
      "tipoConta": "CONTA RESERVA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta MA IV Energia S.A."
   },
   {
    "documento": "30872571000187",
    "documentoTipo": "cnpj",
    "documentoFormatado": "30.872.571/0001-87",
    "razaoSocial": "DELTA MA V ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 11 S.A."
+   ],
    "chaveBusca": "DELTA MA 5 ENERGIA",
    "grupo": "SD",
    "codigo": "1501",
@@ -6568,14 +6785,17 @@
      "tipoConta": "CONTA RESERVA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta MA V Energia S.A."
   },
   {
    "documento": "30866557000170",
    "documentoTipo": "cnpj",
    "documentoFormatado": "30.866.557/0001-70",
    "razaoSocial": "DELTA MA VI ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 12 S.A."
+   ],
    "chaveBusca": "DELTA MA 6 ENERGIA",
    "grupo": "SD",
    "codigo": "1481",
@@ -6616,14 +6836,17 @@
      "tipoConta": "CONTA RESERVA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta MA VI Energia S.A."
   },
   {
    "documento": "26136557000148",
    "documentoTipo": "cnpj",
    "documentoFormatado": "26.136.557/0001-48",
    "razaoSocial": "DELTA MARANHÃO HOLDING ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia do Maranhão S.A."
+   ],
    "chaveBusca": "DELTA MARANHAO HOLDING ENERGIA",
    "grupo": "SD",
    "codigo": "1341",
@@ -6646,7 +6869,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Delta Maranhão Holding Energia S.A."
   },
   {
    "documento": "49685361000108",
@@ -6724,7 +6948,8 @@
      "tipoConta": "RESTRITA / NET CASH PROCEEDS",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Energizou Comercializadora de Energia S.A."
   },
   {
    "documento": "14607000000169",
@@ -8600,7 +8825,9 @@
    "documentoTipo": "cnpj",
    "documentoFormatado": "12.353.242/0001-48",
    "razaoSocial": "GAMMA DESENVOLVIMENTO DE ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "CAPRI SP PARTICIPACOES S/A"
+   ],
    "chaveBusca": "GAMMA DESENVOLVIMENTO DE ENERGIA",
    "grupo": "SG",
    "codigo": "1281",
@@ -8614,7 +8841,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Gamma Desenvolvimento de Energia S.A."
   },
   {
    "documento": "09165098000101",
@@ -8687,7 +8915,9 @@
    "documentoTipo": "cnpj",
    "documentoFormatado": "49.685.390/0001-70",
    "razaoSocial": "GD PARNAÍBA ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 25 S.A."
+   ],
    "chaveBusca": "GD PARNAIBA ENERGIA",
    "grupo": "SD",
    "codigo": "2801",
@@ -8701,7 +8931,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "GD Parnaíba Energia S.A."
   },
   {
    "documento": "301328223",
@@ -9221,7 +9452,8 @@
      "tipoConta": "CC RESERVA SERVIÇO DA DÍVIDA BNDES",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Hidrelétrica Pipoca S.A."
   },
   {
    "documento": "10400065000188",
@@ -9278,7 +9510,8 @@
      "tipoConta": "CC VINCULADA A DÍVIDA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Indaiá Grande Energia S.A."
   },
   {
    "documento": "11254582000159",
@@ -9344,7 +9577,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Indaiazinho Energia S.A."
   },
   {
    "documento": "47861368000108",
@@ -9570,7 +9804,9 @@
    "documentoTipo": "cnpj",
    "documentoFormatado": "12.265.122/0001-99",
    "razaoSocial": "OMEGA DESENVOLVIMENTO DE ENERGIA 1 S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "ZETA ENERGIA S.A."
+   ],
    "chaveBusca": "OMEGA DESENVOLVIMENTO DE ENERGIA 1",
    "grupo": "SD",
    "codigo": "1291",
@@ -9593,7 +9829,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Omega Desenvolvimento de Energia 1 S.A."
   },
   {
    "documento": "42876955000157",
@@ -9621,7 +9858,9 @@
    "documentoTipo": "cnpj",
    "documentoFormatado": "15.191.561/0001-92",
    "razaoSocial": "OMEGA DESENVOLVIMENTO DE ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Kyria Energia S.A."
+   ],
    "chaveBusca": "OMEGA DESENVOLVIMENTO DE ENERGIA",
    "grupo": "SD",
    "codigo": "1271",
@@ -9653,14 +9892,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Omega Desenvolvimento de Energia S.A."
   },
   {
    "documento": "26374265000143",
    "documentoTipo": "cnpj",
    "documentoFormatado": "26.374.265/0001-43",
    "razaoSocial": "OMEGA ENERGIA SOLAR 1 S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Solar Energia S.A."
+   ],
    "chaveBusca": "OMEGA ENERGIA SOLAR 1",
    "grupo": "SD",
    "codigo": "1331",
@@ -9674,7 +9916,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Omega Energia Solar 1 S.A."
   },
   {
    "documento": "29055794000172",
@@ -9888,7 +10131,9 @@
    "documentoTipo": "cnpj",
    "documentoFormatado": "49.685.477/0001-47",
    "razaoSocial": "SERENA CHUÍ HOLDING ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 24 S.A."
+   ],
    "chaveBusca": "SERENA CHUI HOLDING ENERGIA",
    "grupo": "SD",
    "codigo": "2791",
@@ -9902,14 +10147,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Chuí Holding Energia S.A."
   },
   {
    "documento": "42873310000160",
    "documentoTipo": "cnpj",
    "documentoFormatado": "42.873.310/0001-60",
    "razaoSocial": "SERENA CHUÍ I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 15 S.A."
+   ],
    "chaveBusca": "SERENA CHUI 1 ENERGIA",
    "grupo": "SD",
    "codigo": "2381",
@@ -9941,7 +10189,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Chuí I Energia S.A."
   },
   {
    "documento": "14797440000126",
@@ -9998,14 +10247,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Comercializadora de Energia S.A."
   },
   {
    "documento": "29098708000109",
    "documentoTipo": "cnpj",
    "documentoFormatado": "29.098.708/0001-09",
    "razaoSocial": "SERENA DESENVOLVIMENTO COMERCIALIZADORA DE ENERGIA LTDA",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento Comercializadora de Energia Ltda"
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO COMERCIALIZADORA DE ENERGIA",
    "grupo": "SD",
    "codigo": "1411",
@@ -10019,14 +10271,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento Comercializadora de Energia Ltda"
   },
   {
    "documento": "42858734000156",
    "documentoTipo": "cnpj",
    "documentoFormatado": "42.858.734/0001-56",
    "razaoSocial": "SERENA DESENVOLVIMENTO DE ENERGIA 14 S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 14 S.A."
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO DE ENERGIA 14",
    "grupo": "SD",
    "codigo": "2371",
@@ -10040,14 +10295,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 14 S.A."
   },
   {
    "documento": "42858879000157",
    "documentoTipo": "cnpj",
    "documentoFormatado": "42.858.879/0001-57",
    "razaoSocial": "SERENA DESENVOLVIMENTO DE ENERGIA 16 S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 16 S.A."
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO DE ENERGIA 16",
    "grupo": "SD",
    "codigo": "2391",
@@ -10061,14 +10319,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 16 S.A."
   },
   {
    "documento": "42876928000184",
    "documentoTipo": "cnpj",
    "documentoFormatado": "42.876.928/0001-84",
    "razaoSocial": "SERENA DESENVOLVIMENTO DE ENERGIA 17 S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 17 S.A."
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO DE ENERGIA 17",
    "grupo": "SD",
    "codigo": "2411",
@@ -10082,14 +10343,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 17 S.A."
   },
   {
    "documento": "42876914000160",
    "documentoTipo": "cnpj",
    "documentoFormatado": "42.876.914/0001-60",
    "razaoSocial": "SERENA DESENVOLVIMENTO DE ENERGIA 19 S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 19 S.A."
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO DE ENERGIA 19",
    "grupo": "SD",
    "codigo": "2401",
@@ -10103,14 +10367,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 19 S.A."
   },
   {
    "documento": "47124073000159",
    "documentoTipo": "cnpj",
    "documentoFormatado": "47.124.073/0001-59",
    "razaoSocial": "SERENA DESENVOLVIMENTO DE ENERGIA 22 S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 22 S.A."
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO DE ENERGIA 22",
    "grupo": "SD",
    "codigo": "2681",
@@ -10124,14 +10391,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 22 S.A."
   },
   {
    "documento": "51662933000185",
    "documentoTipo": "cnpj",
    "documentoFormatado": "51.662.933/0001-85",
    "razaoSocial": "SERENA DESENVOLVIMENTO DE ENERGIA 27 S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 27 S.A."
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO DE ENERGIA 27",
    "grupo": "SD",
    "codigo": "2821",
@@ -10145,14 +10415,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 27 S.A."
   },
   {
    "documento": "51662774000119",
    "documentoTipo": "cnpj",
    "documentoFormatado": "51.662.774/0001-19",
    "razaoSocial": "SERENA DESENVOLVIMENTO DE ENERGIA 28 S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 28 S.A."
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO DE ENERGIA 28",
    "grupo": "SD",
    "codigo": "2831",
@@ -10166,7 +10439,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 28 S.A."
   },
   {
    "documento": "54044095000174",
@@ -10187,7 +10461,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 30 S.A."
   },
   {
    "documento": "53874232000135",
@@ -10208,7 +10483,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 33 S.A."
   },
   {
    "documento": "53874200000130",
@@ -10229,7 +10505,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 34 S.A."
   },
   {
    "documento": "54073076000176",
@@ -10250,7 +10527,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 35 S.A."
   },
   {
    "documento": "57586097000183",
@@ -10271,7 +10549,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 36 S.A."
   },
   {
    "documento": "57603550000112",
@@ -10292,7 +10571,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 37 S.A."
   },
   {
    "documento": "57586126000107",
@@ -10313,7 +10593,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 38 S.A."
   },
   {
    "documento": "57603528000172",
@@ -10334,7 +10615,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 39 S.A."
   },
   {
    "documento": "57586198000154",
@@ -10355,7 +10637,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 40 S.A."
   },
   {
    "documento": "59192957000120",
@@ -10376,7 +10659,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 41 S.A."
   },
   {
    "documento": "59191570000159",
@@ -10397,7 +10681,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 42 S.A."
   },
   {
    "documento": "59191515000169",
@@ -10418,7 +10703,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 43 S.A."
   },
   {
    "documento": "59187157000110",
@@ -10439,7 +10725,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 44 S.A."
   },
   {
    "documento": "59191537000129",
@@ -10460,7 +10747,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento de Energia 45 S.A."
   },
   {
    "documento": "67200372000132",
@@ -10677,7 +10965,9 @@
    "documentoTipo": "cnpj",
    "documentoFormatado": "42.385.499/0001-42",
    "razaoSocial": "SERENA DESENVOLVIMENTO S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento S.A."
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO",
    "grupo": "SD",
    "codigo": "2511",
@@ -10745,14 +11035,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento S.A."
   },
   {
    "documento": "37898615000197",
    "documentoTipo": "cnpj",
    "documentoFormatado": "37.898.615/0001-97",
    "razaoSocial": "SERENA DESENVOLVIMENTO SUBHOLDING I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Assuruá 4 Holding Energia S.A."
+   ],
    "chaveBusca": "SERENA DESENVOLVIMENTO SUBHOLDING 1 ENERGIA",
    "grupo": "SD",
    "codigo": "1951",
@@ -10793,14 +11086,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Desenvolvimento Subholding I Energia S.A."
   },
   {
    "documento": "42500384000151",
    "documentoTipo": "cnpj",
    "documentoFormatado": "42.500.384/0001-51",
    "razaoSocial": "SERENA ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Energia S.A."
+   ],
    "chaveBusca": "SERENA ENERGIA",
    "grupo": "SD",
    "codigo": "2501",
@@ -10850,7 +11146,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Energia S.A."
   },
   {
    "documento": "15191543000100",
@@ -10887,7 +11184,9 @@
    "documentoTipo": "cnpj",
    "documentoFormatado": "09.149.503/0001-06",
    "razaoSocial": "SERENA GERAÇÃO S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Geração S.A."
+   ],
    "chaveBusca": "SERENA GERACAO",
    "grupo": "SG",
    "codigo": "1001",
@@ -11081,14 +11380,17 @@
      "tipoConta": "CONTA ENCERRADA",
      "ativa": false
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Geração S.A."
   },
   {
    "documento": "09149503000360",
    "documentoTipo": "cnpj",
    "documentoFormatado": "09.149.503/0003-60",
    "razaoSocial": "SERENA GERAÇÃO S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Geração S.A."
+   ],
    "chaveBusca": "SERENA GERACAO",
    "grupo": "SG",
    "codigo": "1002",
@@ -11129,14 +11431,17 @@
      "tipoConta": "CONTA VINCULADA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena Geração S.A."
   },
   {
    "documento": "51662890000138",
    "documentoTipo": "cnpj",
    "documentoFormatado": "51.662.890/0001-38",
    "razaoSocial": "SERENA UC ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 26 S.A."
+   ],
    "chaveBusca": "SERENA UC ENERGIA",
    "grupo": "SD",
    "codigo": "2811",
@@ -11150,14 +11455,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serena UC Energia S.A."
   },
   {
    "documento": "03803650000163",
    "documentoTipo": "cnpj",
    "documentoFormatado": "03.803.650/0001-63",
    "razaoSocial": "SERRA DAS AGULHAS ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Sigma Energia S.A."
+   ],
    "chaveBusca": "SERRA DAS AGULHAS ENERGIA",
    "grupo": "SG",
    "codigo": "1131",
@@ -11216,14 +11524,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Serra das Agulhas Energia S.A."
   },
   {
    "documento": "53804622000139",
    "documentoTipo": "cnpj",
    "documentoFormatado": "53.804.622/0001-39",
    "razaoSocial": "SOL  5 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Serena Desenvolvimento de Energia 29 S.A."
+   ],
    "chaveBusca": "SOL 5 ENERGIA",
    "grupo": "SD",
    "codigo": "2841",
@@ -11237,14 +11548,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Sol 5 Energia S.A."
   },
   {
    "documento": "53804680000162",
    "documentoTipo": "cnpj",
    "documentoFormatado": "53.804.680/0001-62",
    "razaoSocial": "SOL 1 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Serena Desenvolvimento de Energia 31 S.A."
+   ],
    "chaveBusca": "SOL 1 ENERGIA",
    "grupo": "SD",
    "codigo": "2861",
@@ -11258,14 +11572,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Sol 1 Energia S.A."
   },
   {
    "documento": "53826519000190",
    "documentoTipo": "cnpj",
    "documentoFormatado": "53.826.519/0001-90",
    "razaoSocial": "SOL 2 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Serena Desenvolvimento de Energia 32 S.A."
+   ],
    "chaveBusca": "SOL 2 ENERGIA",
    "grupo": "SD",
    "codigo": "2871",
@@ -11279,14 +11596,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Sol 2 Energia S.A."
   },
   {
    "documento": "42876976000172",
    "documentoTipo": "cnpj",
    "documentoFormatado": "42.876.976/0001-72",
    "razaoSocial": "SOL 345 ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Omega Desenvolvimento de Energia 13 S.A."
+   ],
    "chaveBusca": "SOL 345 ENERGIA",
    "grupo": "SD",
    "codigo": "2361",
@@ -11300,7 +11620,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Sol 345 Energia S.A."
   },
   {
    "documento": "18578614000110",
@@ -11387,7 +11708,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "VDB F1 Geração de Energia S.A."
   },
   {
    "documento": "19788923000188",
@@ -11395,7 +11717,8 @@
    "documentoFormatado": "19.788.923/0001-88",
    "razaoSocial": "VDB F2 GERACAO DE ENERGIA S.A.",
    "nomesAlternativos": [
-    "VDB F2 GERAÇÃO DE ENERGIA S.A"
+    "VDB F2 GERAÇÃO DE ENERGIA S.A",
+    "Nexpar Participações S.A."
    ],
    "chaveBusca": "VDB F2 GERACAO DE ENERGIA",
    "grupo": "VDB",
@@ -11482,7 +11805,8 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "VDB F2 Geração de Energia S.A."
   },
   {
    "documento": "27074078000107",
@@ -11530,14 +11854,17 @@
      "tipoConta": "LIVRE",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "VDB F3 Geração de Energia S.A."
   },
   {
    "documento": "20081333000108",
    "documentoTipo": "cnpj",
    "documentoFormatado": "20.081.333/0001-08",
    "razaoSocial": "VENTOS DA BAHIA F1 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Alto do Bonito S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F1 1 ENERGIA",
    "grupo": "VDB",
    "codigo": "2261",
@@ -11614,14 +11941,17 @@
      "tipoConta": "CONTA FECHAMENTO CÂMBIO",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F1 I Energia S.A."
   },
   {
    "documento": "20088432000103",
    "documentoTipo": "cnpj",
    "documentoFormatado": "20.088.432/0001-03",
    "razaoSocial": "VENTOS DA BAHIA F1 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Boa Vista S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F1 2 ENERGIA",
    "grupo": "VDB",
    "codigo": "2281",
@@ -11698,14 +12028,17 @@
      "tipoConta": "CONTA FECHAMENTO CÂMBIO",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F1 II Energia S.A."
   },
   {
    "documento": "20081762000177",
    "documentoTipo": "cnpj",
    "documentoFormatado": "20.081.762/0001-77",
    "razaoSocial": "VENTOS DA BAHIA F1 III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Colina S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F1 3 ENERGIA",
    "grupo": "VDB",
    "codigo": "2271",
@@ -11782,14 +12115,17 @@
      "tipoConta": "CONTA FECHAMENTO CÂMBIO",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F1 III Energia S.A."
   },
   {
    "documento": "23888783000197",
    "documentoTipo": "cnpj",
    "documentoFormatado": "23.888.783/0001-97",
    "razaoSocial": "VENTOS DA BAHIA F2 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Ventos da Bahia I S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F2 1 ENERGIA",
    "grupo": "VDB",
    "codigo": "2301",
@@ -11902,14 +12238,17 @@
      "tipoConta": "CONTA FECHAMENTO CÂMBIO",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F2 I Energia S.A."
   },
   {
    "documento": "23888824000145",
    "documentoTipo": "cnpj",
    "documentoFormatado": "23.888.824/0001-45",
    "razaoSocial": "VENTOS DA BAHIA F2 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Ventos da Bahia III S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F2 2 ENERGIA",
    "grupo": "VDB",
    "codigo": "2311",
@@ -12022,14 +12361,17 @@
      "tipoConta": "CONTA FECHAMENTO CÂMBIO",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F2 II Energia S.A."
   },
   {
    "documento": "23890926000103",
    "documentoTipo": "cnpj",
    "documentoFormatado": "23.890.926/0001-03",
    "razaoSocial": "VENTOS DA BAHIA F2 III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Ventos da Bahia IX S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F2 3 ENERGIA",
    "grupo": "VDB",
    "codigo": "2321",
@@ -12142,14 +12484,17 @@
      "tipoConta": "CONTA FECHAMENTO CÂMBIO",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F2 III Energia S.A."
   },
   {
    "documento": "23888804000174",
    "documentoTipo": "cnpj",
    "documentoFormatado": "23.888.804/0001-74",
    "razaoSocial": "VENTOS DA BAHIA F2 IV ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Ventos da Bahia XVIII S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F2 4 ENERGIA",
    "grupo": "VDB",
    "codigo": "2331",
@@ -12262,14 +12607,17 @@
      "tipoConta": "CONTA FECHAMENTO CÂMBIO",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F2 IV Energia S.A."
   },
   {
    "documento": "31810463000142",
    "documentoTipo": "cnpj",
    "documentoFormatado": "31.810.463/0001-42",
    "razaoSocial": "VENTOS DA BAHIA F3 I ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Ventos da Bahia XIII S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F3 1 ENERGIA",
    "grupo": "VDB",
    "codigo": "2461",
@@ -12382,14 +12730,17 @@
      "tipoConta": "VINCULADA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F3 I Energia S.A."
   },
   {
    "documento": "31818978000199",
    "documentoTipo": "cnpj",
    "documentoFormatado": "31.818.978/0001-99",
    "razaoSocial": "VENTOS DA BAHIA F3 II ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Ventos da Bahia XIV S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F3 2 ENERGIA",
    "grupo": "VDB",
    "codigo": "2471",
@@ -12502,14 +12853,17 @@
      "tipoConta": "VINCULADA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F3 II Energia S.A."
   },
   {
    "documento": "31782653000101",
    "documentoTipo": "cnpj",
    "documentoFormatado": "31.782.653/0001-01",
    "razaoSocial": "VENTOS DA BAHIA F3 III ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Ventos da Bahia XXIII S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F3 3 ENERGIA",
    "grupo": "VDB",
    "codigo": "2481",
@@ -12622,14 +12976,17 @@
      "tipoConta": "VINCULADA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F3 III Energia S.A."
   },
   {
    "documento": "32124546000140",
    "documentoTipo": "cnpj",
    "documentoFormatado": "32.124.546/0001-40",
    "razaoSocial": "VENTOS DA BAHIA F3 IV ENERGIA S.A.",
-   "nomesAlternativos": [],
+   "nomesAlternativos": [
+    "Parque Eólico Ventos da Bahia XXVII S.A."
+   ],
    "chaveBusca": "VENTOS DA BAHIA F3 4 ENERGIA",
    "grupo": "VDB",
    "codigo": "2491",
@@ -12742,7 +13099,8 @@
      "tipoConta": "VINCULADA",
      "ativa": true
     }
-   ]
+   ],
+   "razaoSocialJuridica": "Ventos da Bahia F3 IV Energia S.A."
   }
  ],
  "indices": {
@@ -18883,72 +19241,124 @@
    "ARCO ENERGIA T2": "48960007000181",
    "ARCO ENERGIA 4": "48960007000181",
    "ASSURUA 1 ENERGIA": "23778492000146",
+   "CEA 1 CENTRAIS EOLICAS ASSURUA 1 SPE": "23778492000146",
    "ASSURUA 1 1 ENERGIA": "19246831000176",
+   "PARQUE EOLICO ASSURUA 5": "19246831000176",
    "ASSURUA 1 2 ENERGIA": "19246799000129",
+   "PARQUE EOLICO ASSURUA 2": "19246799000129",
    "ASSURUA 1 3 ENERGIA": "19246849000178",
+   "PARQUE EOLICO ASSURUA 7": "19246849000178",
    "ASSURUA 2 ENERGIA": "24274124000123",
+   "CEA 2 CENTRAIS EOLICAS ASSURUA 2 SPE": "24274124000123",
    "ASSURUA 2 1 ENERGIA": "21544084000102",
+   "PARQUE EOLICO ASSURUA 3": "21544084000102",
    "ASSURUA 2 2 ENERGIA": "21544129000130",
+   "PARQUE EOLICO ASSURUA 4": "21544129000130",
    "ASSURUA 2 3 ENERGIA": "21543971000158",
+   "PARQUE EOLICO CAPOEIRAS 3": "21543971000158",
    "ASSURUA 2 4 ENERGIA": "21541973000108",
+   "PARQUE EOLICO CURRAL DE PEDRAS 1": "21541973000108",
    "ASSURUA 2 9 ENERGIA": "21544159000147",
+   "PARQUE EOLICO LARANJEIRAS 2": "21544159000147",
    "ASSURUA 2 5 ENERGIA": "21544255000195",
+   "PARQUE EOLICO CURRAL DE PEDRAS 2": "21544255000195",
    "ASSURUA 2 6 ENERGIA": "21544216000198",
+   "PARQUE EOLICO DIAMANTE 2": "21544216000198",
    "ASSURUA 2 7 ENERGIA": "21543994000162",
+   "PARQUE EOLICO DIAMANTE 3": "21543994000162",
    "ASSURUA 2 8 ENERGIA": "21544025000126",
+   "PARQUE EOLICO LARANJEIRAS 1": "21544025000126",
    "ASSURUA 2 10 ENERGIA": "21544060000145",
+   "PARQUE EOLICO LARANJEIRAS 5": "21544060000145",
    "ASSURUA 3 ENERGIA": "24269491000139",
+   "CEA 3 CENTRAIS EOLICAS ASSURUA 3 SPE S A": "24269491000139",
    "ASSURUA 3 1 ENERGIA": "21816037000162",
+   "PARQUE EOLICO LARANJEIRAS 3": "21816037000162",
    "ASSURUA 3 2 ENERGIA": "21815934000151",
+   "PARQUE EOLICO LARANJEIRAS 9": "21815934000151",
    "ASSURUA 4 E 5 HOLDING ENERGIA": "38286323000166",
+   "ASSURUA 5 ENERGIA": "38286323000166",
    "ASSURUA 4 1 ENERGIA": "38112927000196",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 5": "38112927000196",
    "ASSURUA 4 2 ENERGIA": "38286402000177",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 8": "38286402000177",
    "ASSURUA 4 3 ENERGIA": "38112944000123",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 7": "38112944000123",
    "ASSURUA 4 4 ENERGIA": "38050924000175",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 6": "38050924000175",
    "ASSURUA 4 SUBHOLDING 1 ENERGIA": "38249067000137",
+   "CEA 4 CENTRAIS EOLICAS ASSURUA 4 SPE": "38249067000137",
    "ASSURUA 4 SUBHOLDING 2 ENERGIA": "47124064000168",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 21": "47124064000168",
    "ASSURUA 4 5 ENERGIA": "38049586000151",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 3": "38049586000151",
    "ASSURUA 4 6 ENERGIA": "38049608000183",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 2": "38049608000183",
    "ASSURUA 5 1 ENERGIA": "38297095000120",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 10": "38297095000120",
    "ASSURUA 5 2 ENERGIA": "38297116000107",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 11": "38297116000107",
    "ASSURUA 5 3 ENERGIA": "35497092000141",
+   "DELTA 9 ENERGIA": "35497092000141",
    "ASSURUA 5 4 ENERGIA": "42929694000196",
    "ASSURUA 5 SUBHOLDING ENERGIA": "38290765000186",
+   "ASSURUA 5 HOLDING ENERGIA": "38290765000186",
    "ASSURUA 5 5 ENERGIA": "42929707000127",
    "ASSURUA 5 6 ENERGIA": "42931551000119",
    "ASSURUA 6 ENERGIA": "43240763000112",
+   "CEA 6 CENTRAIS EOLICAS ASSURUA 6 SPE": "43240763000112",
    "ASSURUA ENERGIA": "10187906000110",
+   "CEA CENTRAIS EOLICAS ASSURUA": "10187906000110",
    "ASTERI ENERGIA": "15190496000180",
    "BOQUEIRAO GERACAO DE ENERGIA": "30872530000190",
    "CHUI HOLDING": "14738255000160",
    "CONSORCIO ASSURUA 5 2": "61121482000122",
    "CONSORCIO SERENA CARGILL": "52222042000170",
+   "CONSORCIO OMEGA CARGILL": "52222042000170",
    "CONSORCIO SERENA BAHIA": "60059844000130",
    "CONSORCIO SERENA BAHIA 2": "60056790000159",
    "CONSORCIO SERENA BAHIA 3": "60007924000141",
    "CONSORCIO SERENA GD 1": "48438093000167",
+   "CONSORCIO OMEGA GD 1": "48438093000167",
    "CONSORCIO SERENA GD 10": "54146558000109",
+   "CONSORCIO OMEGA GD 10": "54146558000109",
    "CONSORCIO SERENA GD 11": "53695726000152",
    "CONSORCIO SERENA GD 12": "53315473000144",
+   "CONSORCIO OMEGA GD 12": "53315473000144",
    "CONSORCIO SERENA GD 13": "57180880000142",
    "CONSORCIO SERENA GD 2": "48652438000180",
+   "CONSORCIO OMEGA GD 2": "48652438000180",
    "CONSORCIO SERENA GD 3": "48576242000154",
+   "CONSORCIO OMEGA GD 3": "48576242000154",
    "CONSORCIO SERENA GD 4": "48471950000120",
    "CONSORCIO SERENA GD 5": "48625472000166",
+   "CONSORCIO OMEGA GD 5": "48625472000166",
    "CONSORCIO SERENA GD 6": "48564270000151",
+   "CONSORCIO OMEGA GD 6": "48564270000151",
    "CONSORCIO SERENA GD 7": "48728345000192",
+   "CONSORCIO OMEGA GD 7": "48728345000192",
    "CONSORCIO SERENA GD 8": "49703024000104",
+   "CONSORCIO OMEGA GD 8": "49703024000104",
    "CONSORCIO SERENA GD 9": "53670255000128",
    "CONSORCIO VENTOS E AGUAS": "56061802000166",
    "DELTA 1 ENERGIA": "14533540000145",
+   "DELTA DOS VENTOS ENERGIA": "14533540000145",
    "DELTA 1 1 ENERGIA": "14567884000175",
+   "PORTO DAS BARCAS ENERGIA": "14567884000175",
    "DELTA 1 2 ENERGIA": "14567883000120",
+   "PORTO DO PARNAIBA ENERGIA": "14567883000120",
    "DELTA 1 3 ENERGIA": "14567882000186",
+   "PORTO SALGADO ENERGIA": "14567882000186",
    "DELTA 2 ENERGIA": "15190480000178",
+   "POTAMI ENERGIA": "15190480000178",
    "DELTA 2 1 ENERGIA": "18501753000146",
+   "TESTA BRANCA 1 ENERGIA": "18501753000146",
    "DELTA 2 2 ENERGIA": "18495534000100",
+   "TESTA BRANCA 3 ENERGIA": "18495534000100",
    "DELTA 2 3 ENERGIA": "09438017000108",
+   "PORTO DO DELTA ENERGIA": "09438017000108",
    "DELTA 3 ENERGIA": "14797436000168",
+   "OMEGA ENERGIA E IMPLANTACAO 2": "14797436000168",
    "DELTA 3 1 ENERGIA": "23598517000120",
    "DELTA 3 2 ENERGIA": "23598858000103",
    "DELTA 3 3 ENERGIA": "23598847000115",
@@ -18957,23 +19367,34 @@
    "DELTA 3 6 ENERGIA": "23598831000102",
    "DELTA 3 7 ENERGIA": "23598844000181",
    "DELTA 3 8 ENERGIA": "15190472000121",
+   "KALARE ENERGIA": "15190472000121",
    "DELTA 5 1 ENERGIA": "29296171000191",
+   "DELTA 5 4 ENERGIA": "29296171000191",
    "DELTA 5 2 ENERGIA": "29303897000104",
+   "DELTA 5 5 ENERGIA": "29303897000104",
    "DELTA 6 1 ENERGIA": "29296141000185",
+   "DELTA 5 7 ENERGIA": "29296141000185",
    "DELTA 6 2 ENERGIA": "29296975000190",
+   "DELTA 5 9 ENERGIA": "29296975000190",
    "DELTA 7 E 8 HOLDING ENERGIA": "43460232000135",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 19": "43460232000135",
    "DELTA 7 ENERGIA": "30866030000146",
    "DELTA 7 1 ENERGIA": "30866542000102",
    "DELTA 7 2 ENERGIA": "30905225000158",
    "DELTA 8 ENERGIA": "30853820000197",
    "DELTA 8 1 ENERGIA": "30866547000135",
    "DELTA MA 1 ENERGIA": "17408132000150",
+   "DELTA ENERGIA": "17408132000150",
    "DELTA MA 2 ENERGIA": "18634158000189",
+   "DELTA MA ENERGIA": "18634158000189",
    "DELTA MA 3 ENERGIA": "35497089000128",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 9": "35497089000128",
    "DELTA MA 4 ENERGIA": "30895796000159",
    "DELTA MA 5 ENERGIA": "30872571000187",
    "DELTA MA 6 ENERGIA": "30866557000170",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 12": "30866557000170",
    "DELTA MARANHAO HOLDING ENERGIA": "26136557000148",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA DO MARANHAO": "26136557000148",
    "EMANA INVESTIMENTO EM ENERGIA": "49685361000108",
    "ENERGIZOU COMERCIALIZADORA DE ENERGIA": "30693787000185",
    "EOLICA CHUI 1": "14607000000169",
@@ -19000,8 +19421,10 @@
    "FGE GOODNIGHT 2": "822345223",
    "FGE GOODNIGHT": "812933854",
    "GAMMA DESENVOLVIMENTO DE ENERGIA": "12353242000148",
+   "CAPRI SP PARTICIPACOES S A": "12353242000148",
    "GARGAU ENERGETICA": "09165098000101",
    "GD PARNAIBA ENERGIA": "49685390000170",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 25": "49685390000170",
    "GOODNIGHT 1 CLASS B HOLDCO": "301328223",
    "GOODNIGHT 1 CLASS B MEMBER": "352773653",
    "GOODNIGHT 1 TE PARTNERS": "352773653",
@@ -19034,9 +19457,12 @@
    "LAMBDA 4 ENERGIA": "34216543000162",
    "MUSCA ENERGIA": "18496502000110",
    "OMEGA DESENVOLVIMENTO DE ENERGIA 1": "12265122000199",
+   "ZETA ENERGIA": "12265122000199",
    "OMEGA DESENVOLVIMENTO DE ENERGIA 18": "42876955000157",
    "OMEGA DESENVOLVIMENTO DE ENERGIA": "15191561000192",
+   "KYRIA ENERGIA": "15191561000192",
    "OMEGA ENERGIA SOLAR 1": "26374265000143",
+   "OMEGA SOLAR ENERGIA": "26374265000143",
    "OMEGA GERACAO COMERCIALIZADORA DE ENERGIA": "29055794000172",
    "OMEGA GESTORA DE RECURSOS": "14797432000180",
    "OMNI ENERGIA": "33239813000198",
@@ -19044,16 +19470,25 @@
    "SAMPI ENERGIA": "15191501000170",
    "SANTA VITORIA DO PALMAR HOLDING": "12094666000135",
    "SERENA CHUI HOLDING ENERGIA": "49685477000147",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 24": "49685477000147",
    "SERENA CHUI 1 ENERGIA": "42873310000160",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 15": "42873310000160",
    "SERENA COMERCIALIZADORA DE ENERGIA": "14797440000126",
    "SERENA DESENVOLVIMENTO COMERCIALIZADORA DE ENERGIA": "29098708000109",
+   "OMEGA DESENVOLVIMENTO COMERCIALIZADORA DE ENERGIA": "29098708000109",
    "SERENA DESENVOLVIMENTO DE ENERGIA 14": "42858734000156",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 14": "42858734000156",
    "SERENA DESENVOLVIMENTO DE ENERGIA 16": "42858879000157",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 16": "42858879000157",
    "SERENA DESENVOLVIMENTO DE ENERGIA 17": "42876928000184",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 17": "42876928000184",
    "SERENA DESENVOLVIMENTO DE ENERGIA 19": "42876914000160",
    "SERENA DESENVOLVIMENTO DE ENERGIA 22": "47124073000159",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 22": "47124073000159",
    "SERENA DESENVOLVIMENTO DE ENERGIA 27": "51662933000185",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 27": "51662933000185",
    "SERENA DESENVOLVIMENTO DE ENERGIA 28": "51662774000119",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 28": "51662774000119",
    "SERENA DESENVOLVIMENTO DE ENERGIA 30": "54044095000174",
    "SERENA DESENVOLVIMENTO DE ENERGIA 33": "53874232000135",
    "SERENA DESENVOLVIMENTO DE ENERGIA 34": "53874200000130",
@@ -19079,31 +19514,60 @@
    "SERENA DESENVOLVIMENTO DE ENERGIA 54": "67200573000130",
    "SERENA DESENVOLVIMENTO DE ENERGIA 55": "67200003000140",
    "SERENA DESENVOLVIMENTO": "42385499000142",
+   "OMEGA DESENVOLVIMENTO": "42385499000142",
    "SERENA DESENVOLVIMENTO SUBHOLDING 1 ENERGIA": "37898615000197",
+   "ASSURUA 4 HOLDING ENERGIA": "37898615000197",
    "SERENA ENERGIA": "42500384000151",
+   "OMEGA ENERGIA": "42500384000151",
    "SERENA GERACAO 1": "15191543000100",
    "SERENA GERACAO": "09149503000360",
+   "OMEGA GERACAO": "09149503000106",
    "SERENA UC ENERGIA": "51662890000138",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 26": "51662890000138",
    "SERRA DAS AGULHAS ENERGIA": "03803650000163",
+   "SIGMA ENERGIA": "03803650000163",
    "SOL 5 ENERGIA": "53804622000139",
+   "SERENA DESENVOLVIMENTO DE ENERGIA 29": "53804622000139",
    "SOL 1 ENERGIA": "53804680000162",
+   "SERENA DESENVOLVIMENTO DE ENERGIA 31": "53804680000162",
    "SOL 2 ENERGIA": "53826519000190",
+   "SERENA DESENVOLVIMENTO DE ENERGIA 32": "53826519000190",
    "SOL 345 ENERGIA": "42876976000172",
+   "OMEGA DESENVOLVIMENTO DE ENERGIA 13": "42876976000172",
    "TESTA BRANCA 2 ENERGIA": "18578614000110",
    "VDB F1 GERACAO DE ENERGIA": "24875980000134",
    "VDB F2 GERACAO DE ENERGIA": "19788923000188",
+   "NEXPAR PARTICIPACOES": "19788923000188",
    "VDB F3 GERACAO DE ENERGIA": "27074078000107",
    "VENTOS DA BAHIA F1 1 ENERGIA": "20081333000108",
+   "PARQUE EOLICO ALTO DO BONITO": "20081333000108",
    "VENTOS DA BAHIA F1 2 ENERGIA": "20088432000103",
+   "PARQUE EOLICO BOA VISTA": "20088432000103",
    "VENTOS DA BAHIA F1 3 ENERGIA": "20081762000177",
+   "PARQUE EOLICO COLINA": "20081762000177",
    "VENTOS DA BAHIA F2 1 ENERGIA": "23888783000197",
+   "PARQUE EOLICO VENTOS DA BAHIA 1": "23888783000197",
    "VENTOS DA BAHIA F2 2 ENERGIA": "23888824000145",
+   "PARQUE EOLICO VENTOS DA BAHIA 3": "23888824000145",
    "VENTOS DA BAHIA F2 3 ENERGIA": "23890926000103",
+   "PARQUE EOLICO VENTOS DA BAHIA 9": "23890926000103",
    "VENTOS DA BAHIA F2 4 ENERGIA": "23888804000174",
+   "PARQUE EOLICO VENTOS DA BAHIA 18": "23888804000174",
    "VENTOS DA BAHIA F3 1 ENERGIA": "31810463000142",
+   "PARQUE EOLICO VENTOS DA BAHIA 13": "31810463000142",
    "VENTOS DA BAHIA F3 2 ENERGIA": "31818978000199",
+   "PARQUE EOLICO VENTOS DA BAHIA 14": "31818978000199",
    "VENTOS DA BAHIA F3 3 ENERGIA": "31782653000101",
-   "VENTOS DA BAHIA F3 4 ENERGIA": "32124546000140"
+   "PARQUE EOLICO VENTOS DA BAHIA XXIII": "31782653000101",
+   "VENTOS DA BAHIA F3 4 ENERGIA": "32124546000140",
+   "PARQUE EOLICO VENTOS DA BAHIA XXVII": "32124546000140"
   }
+ },
+ "razoesSociais": {
+  "origem": "RESULTADO_RAZAO_SOCIAL_BANCOS_FINAL_26_06.xlsx",
+  "aba": "Razão status",
+  "empresasCasadas": 153,
+  "comDenominacaoAntiga": 104,
+  "divergencias": []
  }
 }

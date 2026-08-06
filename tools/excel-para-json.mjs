@@ -67,6 +67,11 @@ function lerArgumentos(argv) {
     colTipo: 'TIPO DE CONTA',
     colGrupo: 'GRUPO ECONOMICO',
     colCodigo: 'CÓDIGO',
+    arquivoRazoes: null,
+    abaRazoes: 'Razão status',
+    colCnpjRazoes: 'CNPJ',
+    colJuridica: 'Razão Social Jurídico',
+    colAntiga: 'Denominação Antiga',
     saidaJson: path.join(RAIZ, 'frontend/data/contas-bancarias.json'),
     saidaSql: path.join(RAIZ, 'db/07_seed_contas.sql'),
     inspecionar: false,
@@ -87,6 +92,10 @@ function lerArgumentos(argv) {
     '--col-tipo': 'colTipo',
     '--col-grupo': 'colGrupo',
     '--col-codigo': 'colCodigo',
+    '--arquivo-razoes': 'arquivoRazoes',
+    '--aba-razoes': 'abaRazoes',
+    '--col-juridica': 'colJuridica',
+    '--col-antiga': 'colAntiga',
     '--saida-json': 'saidaJson',
     '--saida-sql': 'saidaSql',
   };
@@ -436,6 +445,146 @@ function importar(livro, op) {
 }
 
 /* ========================================================================== *
+ * As razões sociais antigas
+ * ========================================================================== *
+ * POR QUE ISTO É NECESSÁRIO
+ * -------------------------
+ * O grupo passou por uma renomeação grande: Omega virou Serena, Porto do
+ * Parnaíba virou Delta 1 II, Sigma virou Serra das Agulhas. São 104 de 161
+ * empresas com nome antigo registrado.
+ *
+ * Um boleto emitido antes da mudança — ou por um fornecedor que não atualizou o
+ * cadastro — vem com o nome velho. O operador que procurar "Porto do Parnaíba"
+ * no portal não acharia nada, e teria que abrir uma planilha à parte para
+ * descobrir que hoje é "Delta 1 II".
+ *
+ * Guardando os dois nomes, a busca encontra por qualquer um deles.
+ *
+ * E TEM UM ACHADO DE BRINDE
+ * -------------------------
+ * A planilha compara o nome jurídico (consulta oficial) com o nome que está no
+ * Mapa de Contas, e marca as divergências. São 14. Em alguns casos a diferença
+ * é grande — o Mapa de Contas diz "VDB F2 Geração" onde o jurídico diz
+ * "Assuruá 2 I". Não corrijo por conta própria: qual dos dois vale é decisão de
+ * quem cuida do cadastro. Mas os dois entram na busca, e o relatório lista as
+ * divergências para alguém decidir.
+ */
+const SEM_INFORMACAO = new Set(['', 'não informado', 'nao informado', 'n/a', '-', 'erro na consulta']);
+
+function lerRazoesSociais(op) {
+  if (!op.arquivoRazoes) return null;
+
+  const livro = abrirPlanilha(op.arquivoRazoes);
+  const nomeAba = livro.SheetNames.includes(op.abaRazoes) ? op.abaRazoes : livro.SheetNames[0];
+  const matriz = comoMatriz(livro.Sheets[nomeAba]);
+
+  const pistas = [op.colCnpjRazoes, op.colJuridica, op.colAntiga];
+  const linhaCab = acharCabecalho(matriz, pistas).linha;
+  const cab = matriz[linhaCab] ?? [];
+
+  const idx = {
+    cnpj: acharColuna(cab, op.colCnpjRazoes),
+    juridica: acharColuna(cab, op.colJuridica),
+    antiga: acharColuna(cab, op.colAntiga),
+  };
+
+  if (idx.cnpj < 0 || idx.juridica < 0) {
+    console.warn(
+      `Aviso: não achei as colunas de CNPJ e razão social jurídica em "${nomeAba}". ` +
+        'Os nomes antigos não serão importados.'
+    );
+    return null;
+  }
+
+  const porDocumento = new Map();
+  let comAntiga = 0;
+
+  for (let i = linhaCab + 1; i < matriz.length; i += 1) {
+    const linha = matriz[i] ?? [];
+    const pega = (j) => (j >= 0 ? String(linha[j] ?? '').trim() : '');
+
+    const doc = digitos(pega(idx.cnpj));
+    if (!doc) continue;
+
+    const juridica = pega(idx.juridica);
+    const antiga = pega(idx.antiga);
+
+    const nomes = [];
+    if (juridica && !SEM_INFORMACAO.has(juridica.toLowerCase())) nomes.push(juridica);
+    if (antiga && !SEM_INFORMACAO.has(antiga.toLowerCase())) {
+      nomes.push(antiga);
+      comAntiga += 1;
+    }
+
+    if (nomes.length) porDocumento.set(doc, { juridica: juridica || null, nomes });
+  }
+
+  return { porDocumento, comAntiga, aba: nomeAba, arquivo: path.basename(op.arquivoRazoes) };
+}
+
+/**
+ * Junta os nomes antigos e jurídicos nas empresas já importadas.
+ * Casa por CNPJ exato e, se não achar, pela raiz — mesma lógica do portal.
+ */
+function juntarRazoes(empresas, razoes) {
+  if (!razoes) return { casadas: 0, divergentes: [], semCasar: [] };
+
+  const porDoc = new Map(empresas.map((e) => [e.documento, e]));
+  const porRaiz = new Map();
+  for (const e of empresas) {
+    if (e.documento.length === 14) {
+      if (!porRaiz.has(e.documento.slice(0, 8))) porRaiz.set(e.documento.slice(0, 8), []);
+      porRaiz.get(e.documento.slice(0, 8)).push(e);
+    }
+  }
+
+  let casadas = 0;
+  const divergentes = [];
+  const semCasar = [];
+
+  for (const [doc, info] of razoes.porDocumento) {
+    let alvos = porDoc.has(doc) ? [porDoc.get(doc)] : porRaiz.get(doc.slice(0, 8)) ?? [];
+    if (!alvos.length) {
+      semCasar.push({ documento: doc, nome: info.juridica });
+      continue;
+    }
+
+    for (const empresa of alvos) {
+      empresa.razaoSocialJuridica = info.juridica ?? empresa.razaoSocialJuridica ?? null;
+
+      // Comparar por chave normalizada, não por texto. "ARCO ENERGIA 1 S.A."
+      // e "Arco Energia 1 S.A." são o mesmo nome com caixa diferente — guardar
+      // os dois só polui a lista que o operador vê.
+      const jaConhecidos = new Set(
+        [empresa.razaoSocial, ...empresa.nomesAlternativos].map((n) => chaveDeNome(n))
+      );
+
+      for (const nome of info.nomes) {
+        const chave = chaveDeNome(nome);
+        if (!chave || jaConhecidos.has(chave)) continue;
+        empresa.nomesAlternativos.push(nome);
+        jaConhecidos.add(chave);
+      }
+
+      // O nome jurídico diverge do nome do Mapa de Contas? Vale registrar.
+      if (
+        info.juridica &&
+        chaveDeNome(info.juridica) !== chaveDeNome(empresa.razaoSocial)
+      ) {
+        divergentes.push({
+          documento: empresa.documento,
+          noMapaDeContas: empresa.razaoSocial,
+          juridica: info.juridica,
+        });
+      }
+      casadas += 1;
+    }
+  }
+
+  return { casadas, divergentes, semCasar };
+}
+
+/* ========================================================================== *
  * Gerar o JSON
  * ========================================================================== */
 function montarJson(resultado, origem) {
@@ -446,7 +595,7 @@ function montarJson(resultado, origem) {
 
   for (const e of empresas) {
     porChaveBusca[e.chaveBusca] = e.documento;
-    for (const alt of e.nomesAlternativos) {
+    for (const alt of [...e.nomesAlternativos, e.razaoSocialJuridica].filter(Boolean)) {
       const k = chaveDeNome(alt);
       if (k && !porChaveBusca[k]) porChaveBusca[k] = e.documento;
     }
@@ -519,7 +668,7 @@ function montarSql(pacote) {
   linhas.push('-- --------------------------------------------------------------- EMPRESAS --');
   linhas.push('insert into public.empresas');
   linhas.push(
-    '  (documento, documento_tipo, razao_social, nomes_alternativos, chave_busca, grupo_economico, codigo_interno, ativo)'
+    '  (documento, documento_tipo, razao_social, razao_social_juridica, nomes_alternativos, chave_busca, grupo_economico, codigo_interno, ativo)'
   );
   linhas.push('values');
   linhas.push(
@@ -528,13 +677,14 @@ function montarSql(pacote) {
         const alt = e.nomesAlternativos.length
           ? `array[${e.nomesAlternativos.map(esc).join(', ')}]::text[]`
           : `'{}'::text[]`;
-        return `  (${esc(e.documento)}, ${esc(e.documentoTipo)}, ${esc(e.razaoSocial)}, ${alt}, ${esc(e.chaveBusca)}, ${esc(e.grupo)}, ${esc(e.codigo)}, true)`;
+        return `  (${esc(e.documento)}, ${esc(e.documentoTipo)}, ${esc(e.razaoSocial)}, ${esc(e.razaoSocialJuridica)}, ${alt}, ${esc(e.chaveBusca)}, ${esc(e.grupo)}, ${esc(e.codigo)}, true)`;
       })
       .join(',\n')
   );
   linhas.push('on conflict (documento) do update set');
-  linhas.push('  documento_tipo     = excluded.documento_tipo,');
-  linhas.push('  razao_social       = excluded.razao_social,');
+  linhas.push('  documento_tipo       = excluded.documento_tipo,');
+  linhas.push('  razao_social         = excluded.razao_social,');
+  linhas.push('  razao_social_juridica = excluded.razao_social_juridica,');
   linhas.push('  nomes_alternativos = excluded.nomes_alternativos,');
   linhas.push('  chave_busca        = excluded.chave_busca,');
   linhas.push('  grupo_economico    = excluded.grupo_economico,');
@@ -591,7 +741,21 @@ function principal() {
   }
 
   const resultado = importar(livro, op);
+
+  // Os nomes antigos, se a planilha de razões sociais foi informada.
+  const razoes = lerRazoesSociais(op);
+  const juncao = juntarRazoes(resultado.empresas, razoes);
+
   const pacote = montarJson(resultado, path.basename(op.arquivo));
+  pacote.razoesSociais = razoes
+    ? {
+        origem: razoes.arquivo,
+        aba: razoes.aba,
+        empresasCasadas: juncao.casadas,
+        comDenominacaoAntiga: razoes.comAntiga,
+        divergencias: juncao.divergentes,
+      }
+    : null;
 
   fs.mkdirSync(path.dirname(op.saidaJson), { recursive: true });
   fs.writeFileSync(op.saidaJson, JSON.stringify(pacote, null, 1), 'utf8');
@@ -638,6 +802,28 @@ function principal() {
     resultado.contasAmbiguas.forEach((c) =>
       console.log(`  conta ${c.conta} -> ${c.empresas} empresas`)
     );
+  }
+
+  if (pacote.razoesSociais) {
+    const r = pacote.razoesSociais;
+    console.log('');
+    console.log(`Razões sociais (${r.origem}, aba "${r.aba}"):`);
+    console.log(`  empresas casadas         : ${r.empresasCasadas}`);
+    console.log(`  com denominação antiga   : ${r.comDenominacaoAntiga}`);
+    if (r.divergencias.length) {
+      console.log('');
+      console.log(`  ATENÇÃO: ${r.divergencias.length} empresa(s) com nome jurídico diferente`);
+      console.log('  do nome no Mapa de Contas. Os dois entram na busca, mas alguém');
+      console.log('  precisa decidir qual é o correto:');
+      r.divergencias.slice(0, 20).forEach((d) => {
+        console.log(`    ${d.documento}`);
+        console.log(`       mapa de contas: ${d.noMapaDeContas}`);
+        console.log(`       jurídico      : ${d.juridica}`);
+      });
+      if (r.divergencias.length > 20) {
+        console.log(`    ... e mais ${r.divergencias.length - 20}. A lista completa está no JSON.`);
+      }
+    }
   }
 
   console.log('');
