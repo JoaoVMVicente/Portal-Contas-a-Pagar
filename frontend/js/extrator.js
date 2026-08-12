@@ -76,7 +76,44 @@ async function carregarPdfJs() {
 
 async function carregarTesseract() {
   if (tesseract) return tesseract;
-  tesseract = await importarPrimeiroQueFuncionar(CONFIG.CDN_TESSERACT, 'o reconhecimento de imagem');
+
+  const modulo = await importarPrimeiroQueFuncionar(
+    CONFIG.CDN_TESSERACT,
+    'o reconhecimento de imagem'
+  );
+
+  /* ------------------------------------------------------------------------ *
+   * Onde as funções realmente estão
+   * ------------------------------------------------------------------------ *
+   * Este foi um bug meu que só apareceu no navegador, e de um jeito silencioso:
+   *
+   *     OCR não funcionou: TypeError: T.recognize is not a function
+   *
+   * Eu chamava `T.recognize(...)` supondo que o módulo exportasse a função
+   * direto. O Tesseract.js v5 publica um build ESM cujo conteúdo fica em
+   * `default` — então o caminho é `T.default.recognize`.
+   *
+   * Como o erro caía num catch que só escrevia no console, o boleto voltava sem
+   * os nomes e ninguém sabia por quê. Custou uma rodada inteira de diagnóstico.
+   *
+   * Aqui aceitamos as duas formas: se o dia em que eles mudarem o empacotamento
+   * chegar, isto continua funcionando.
+   * ------------------------------------------------------------------------ */
+  const alvo =
+    typeof modulo?.recognize === 'function'
+      ? modulo
+      : typeof modulo?.default?.recognize === 'function'
+        ? modulo.default
+        : null;
+
+  if (!alvo) {
+    throw new Error(
+      'A biblioteca de reconhecimento de imagem carregou, mas não achei a função ' +
+        `recognize nela. Exportou: ${Object.keys(modulo ?? {}).join(', ') || '(nada)'}.`
+    );
+  }
+
+  tesseract = alvo;
   return tesseract;
 }
 
@@ -323,6 +360,7 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
    * verdade tem alguns milhares de caracteres; os três que falharam tinham 76,
    * 139 e 395 — só cabeçalho de impressão.
    */
+  let erroDoOcr = null;
   const TEXTO_MINIMO = 600;
 
   // Não dá para consultar o garimpo aqui: ele roda depois. Mas não precisa —
@@ -342,10 +380,17 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
       textoInsuficiente
     );
 
+  // Guardamos o que aconteceu com o OCR para poder dizer na tela. Antes, uma
+  // falha de carregamento do Tesseract virava um console.warn que ninguém lia —
+  // e o boleto voltava sem os nomes, sem explicação nenhuma.
+  let situacaoOcr = precisaOcr ? 'tentando' : 'nao-precisou';
+
   if (precisaOcr) {
     try {
       const origem = ehPdf && documentoPdf ? await pdfParaImagem(documentoPdf) : arquivo;
       const textoOcr = await textoPorOcr(origem, aoProgredir);
+
+      situacaoOcr = textoOcr.trim() ? 'funcionou' : 'nao-leu-nada';
 
       if (textoOcr.trim()) {
         const porOcr = parser.extrairDadosDeTexto(textoOcr);
@@ -366,6 +411,8 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
         }
       }
     } catch (erro) {
+      situacaoOcr = 'falhou';
+      erroDoOcr = erro?.message ?? String(erro);
       console.warn('OCR não funcionou:', erro);
     }
   }
@@ -488,6 +535,24 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
   if (doQr.usados.length) {
     avisos.push(`Do QR code eu aproveitei: ${doQr.usados.join(', ')}.`);
   }
+  if (situacaoOcr === 'falhou') {
+    avisos.push(
+      'Este boleto é uma imagem e eu precisava da leitura ótica para achar os nomes, ' +
+        `mas ela não carregou (${erroDoOcr}). Empresa e fornecedor podem ter ficado em ` +
+        'branco. Recarregar a página costuma resolver.'
+    );
+  } else if (situacaoOcr === 'nao-leu-nada') {
+    avisos.push(
+      'Este boleto é uma imagem e a leitura ótica não decifrou nada dela. Se o arquivo ' +
+        'estiver muito claro, torto ou de baixa resolução, uma cópia melhor ajudaria.'
+    );
+  } else if (situacaoOcr === 'funcionou') {
+    avisos.push(
+      'Este boleto é uma imagem: empresa e fornecedor vieram de leitura ótica, que erra ' +
+        'mais que texto. Vale conferir esses dois.'
+    );
+  }
+
   if (!doGrafico?.codigoBarras && ehPdf && texto.trim().length < 400) {
     avisos.push(
       'Este PDF quase não tem texto — provavelmente é uma imagem. Confira todos os campos com atenção.'
@@ -509,7 +574,18 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
     banco: base.banco,
     bancoNome: base.bancoNome ?? null,
     confianca: base.confianca ?? 'baixa',
-    metodo: `${metodoTexto}/${base.metodo ?? 'nenhum'}`,
+    // Vai para a coluna extracao_metodo do banco. É o que permite consultar
+    // depois quantos boletos passaram por leitura ótica, e quantos falharam
+    // nela — informação que antes se perdia num console.warn.
+    metodo: `${metodoTexto}/${base.metodo ?? 'nenhum'}${
+      situacaoOcr === 'funcionou'
+        ? '+ocr'
+        : situacaoOcr === 'falhou'
+          ? '+ocr-falhou'
+          : situacaoOcr === 'nao-leu-nada'
+            ? '+ocr-vazio'
+            : ''
+    }`,
 
     // ---- do texto (palpite educado)
     numeroDocumento: doTexto.numeroDocumento,

@@ -42,7 +42,6 @@ const MAXIMO = 20;
 // a cada envio. Guardamos a escolha no navegador. Não fica no perfil do banco
 // porque isso exigiria migração, e o ganho seria pequeno: quem troca de
 // departamento troca uma vez na vida.
-const CHAVE_DEPARTAMENTO = 'serena.departamento';
 const CHAVE_TIPO = 'serena.tipo-padrao';
 
 // O tipo do último boleto vira o padrão do próximo. Num lote de quinze notas
@@ -86,7 +85,7 @@ async function iniciar() {
   ligarUpload();
   ligarEnvio();
 
-  await Promise.all([montarDepartamentos(), carregarMeusBoletos()]);
+  await Promise.all([montarDepartamento(), carregarMeusBoletos()]);
 
   // Ao vivo: se a operação associar ou recusar enquanto a página está aberta,
   // a lista se atualiza e um aviso aparece.
@@ -97,36 +96,84 @@ async function iniciar() {
   );
 }
 
-/**
- * A lista de departamentos, com a última escolha da pessoa já selecionada.
+/* ========================================================================== *
+ * O departamento
+ * ========================================================================== *
+ * Deixou de ser pergunta a cada envio. É atributo da pessoa: quem é do
+ * Financeiro manda boleto do Financeiro, sempre. Perguntar cem vezes é pedir a
+ * mesma resposta cem vezes, e abrir espaço para responder diferente por engano.
+ *
+ * Fica no perfil, informado uma vez no primeiro acesso. Aqui ele só aparece
+ * para conferência, sem campo editável — e mesmo que alguém edite o HTML, o
+ * banco carimba a partir do perfil (db/14).
+ *
+ * Quem já tinha conta antes desta mudança não passou pelo primeiro acesso de
+ * novo. Para essas pessoas, e só na primeira vez, o campo aparece editável.
  */
-async function montarDepartamentos() {
-  const seletor = el('departamento');
+async function montarDepartamento() {
+  const area = el('bloco-departamento');
+  const atual = sessao.meuDepartamento();
 
+  if (atual) {
+    area.innerHTML = `
+      <span class="campo__rotulo">Seu departamento</span>
+      <div class="cartao-identidade">
+        <span class="cartao-identidade__inicial">${escapar(atual[0].toUpperCase())}</span>
+        <div><span class="cartao-identidade__nome">${escapar(atual)}</span></div>
+        <span class="cartao-identidade__selo" data-icone="cadeado"
+              title="Vem do seu perfil e vai junto em todo boleto"></span>
+      </div>
+      <span class="campo__dica">
+        Vem do seu perfil. Se mudou de área, fale com quem administra o portal.
+      </span>`;
+    pintarIcones(area);
+    return;
+  }
+
+  // Ainda não informou. Pedimos uma vez, aqui mesmo.
+  let sugestoes = [];
   try {
-    const lista = await dados.listarDepartamentos();
-    const guardado = localStorage.getItem(CHAVE_DEPARTAMENTO);
-
-    seletor.innerHTML =
-      '<option value="">Selecione</option>' +
-      lista
-        .map(
-          (d) =>
-            `<option value="${escapar(d)}" ${d === guardado ? 'selected' : ''}>${escapar(d)}</option>`
-        )
-        .join('');
-
-    el('dica-departamento').textContent = guardado
-      ? 'Guardado do seu último envio. Troque se mudou.'
-      : 'Fica guardado para os próximos envios.';
-
-    seletor.addEventListener('change', () => {
-      if (seletor.value) localStorage.setItem(CHAVE_DEPARTAMENTO, seletor.value);
-    });
+    sugestoes = await dados.departamentosSugeridos();
   } catch (erro) {
-    seletor.innerHTML = '<option value="">Não consegui carregar</option>';
     console.warn(erro);
   }
+
+  area.innerHTML = `
+    <label class="campo__rotulo" for="departamento">
+      Seu departamento <span class="obrigatorio">*</span>
+    </label>
+    <div style="display:flex;gap:8px;align-items:flex-start;">
+      <input type="text" id="departamento" list="lista-departamentos" maxlength="60"
+             placeholder="Ex.: Financeiro" style="flex:1 1 auto;" />
+      <button type="button" class="botao botao--contorno" id="salvar-departamento">Guardar</button>
+    </div>
+    <datalist id="lista-departamentos">
+      ${sugestoes.map((n) => `<option value="${escapar(n)}"></option>`).join('')}
+    </datalist>
+    <span class="campo__dica">
+      Você informa uma vez só. Depois ele vai junto em todos os seus boletos.
+    </span>
+    <span class="campo__erro oculto" id="erro-departamento"></span>`;
+
+  el('salvar-departamento').addEventListener('click', async (ev) => {
+    const valor = el('departamento').value.trim();
+    if (valor.length < 2) {
+      const erro = el('erro-departamento');
+      erro.innerHTML = `${ICONES.alerta}Escreva o seu departamento.`;
+      erro.classList.remove('oculto');
+      return;
+    }
+    try {
+      await comBotaoOcupado(ev.currentTarget, 'Guardando...', async () => {
+        await dados.definirMeuDepartamento(valor);
+        await sessao.recarregarPerfil();
+      });
+      avisar('Departamento guardado. Não vamos perguntar de novo.', 'ok');
+      await montarDepartamento();
+    } catch (erro) {
+      avisar(erro.message, 'erro', 8000);
+    }
+  });
 }
 
 /* ========================================================================== *
@@ -267,7 +314,16 @@ async function lerPendentes() {
       }
       const bloqueia = item.anteriores.some((b) => b.status !== 'recusado');
 
-      item.estado = bloqueia ? 'repetido' : lido.confianca === 'alta' ? 'lido' : 'lido_parcial';
+      // "Confiança alta" significa que o código de barras fechou no dígito
+      // verificador — nada diz sobre os nomes. Um boleto-imagem cujo OCR falhou
+      // vinha marcado como "lido por completo" com empresa e fornecedor em
+      // branco, o que é justamente o contrário de informativo.
+      const faltamNomes = !lido.unidadeCnpj && !lido.fornecedorRazaoSocial;
+      item.estado = bloqueia
+        ? 'repetido'
+        : lido.confianca === 'alta' && !faltamNomes
+          ? 'lido'
+          : 'lido_parcial';
       item.motivo = bloqueia ? 'já está no portal' : null;
     } catch (erro) {
       console.error(erro);
@@ -497,7 +553,7 @@ function desenharResumo() {
   }
 
   const partes = [];
-  if (prontos) partes.push(`<strong>${prontos}</strong> lido(s) por completo`);
+  if (prontos) partes.push(`<strong>${prontos}</strong> lido(s)`);
   if (parciais) partes.push(`<strong>${parciais}</strong> com leitura parcial`);
   if (barrados) partes.push(`<strong>${barrados}</strong> que não vão`);
 
@@ -536,8 +592,11 @@ function ligarEnvio() {
 
     document.querySelectorAll('.campo__erro').forEach((e) => e.classList.add('oculto'));
 
-    const departamento = el('departamento').value;
-    if (!departamento) return marcarErro('departamento', 'Escolha o seu departamento.');
+    if (!sessao.meuDepartamento()) {
+      avisar('Informe o seu departamento antes de enviar.', 'atencao', 6000);
+      el('departamento')?.focus();
+      return;
+    }
 
     const fila = itens.filter(podeEnviar);
     if (!fila.length) return avisar('Nenhum arquivo pronto para enviar.', 'atencao');
@@ -573,7 +632,7 @@ function ligarEnvio() {
 
       try {
         const criado = await dados.criarBoleto(
-          montarRegistro(item, { departamento, observacoes }),
+          montarRegistro(item, { observacoes }),
           item.arquivo
         );
         item.estado = 'enviado';
@@ -610,7 +669,7 @@ function ligarEnvio() {
  * O registro que vai para o banco. Campos não lidos vão como null de propósito
  * — o banco aceita (db/10) e a operação completa depois.
  */
-function montarRegistro(item, { departamento, observacoes }) {
+function montarRegistro(item, { observacoes }) {
   const l = item.lido ?? {};
   const empresa = item.empresa?.empresa ?? null;
 
@@ -642,7 +701,7 @@ function montarRegistro(item, { departamento, observacoes }) {
     extracao_metodo: l.metodo ?? 'nenhum',
     extracao_avisos: l.avisos ?? [],
 
-    departamento,
+    // Não vai daqui: o banco carimba a partir do perfil (db/14).
     observacoes_cliente: observacoes,
   };
 }
