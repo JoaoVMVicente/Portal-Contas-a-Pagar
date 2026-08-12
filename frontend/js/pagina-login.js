@@ -245,6 +245,19 @@ el('form-definir-senha').addEventListener('submit', async (evento) => {
     return marcarErro('senha-repetir', 'As duas senhas não são iguais.');
   }
 
+  // O departamento é escolhido aqui porque é aqui que a pessoa entra pela
+  // primeira vez. Depois fica no perfil e ninguém escolhe de novo.
+  const departamento = el('departamento-ativacao')?.value ?? '';
+  if (!departamento) {
+    const erro = el('erro-departamento-ativacao');
+    if (erro) {
+      erro.innerHTML = `${ICONES.alerta}Escolha o seu departamento.`;
+      erro.classList.remove('oculto');
+    }
+    el('departamento-ativacao')?.focus();
+    return;
+  }
+
   try {
     await comBotaoOcupado(el('botao-salvar-senha'), 'Ativando...', () =>
       dados.concluirPrimeiroAcesso({
@@ -253,6 +266,7 @@ el('form-definir-senha').addEventListener('submit', async (evento) => {
         senha,
         nome: el('nome-ativacao').value.trim() || undefined,
         sobrenome: el('sobrenome-ativacao').value.trim() || undefined,
+        departamento,
       })
     );
 
@@ -266,10 +280,26 @@ el('form-definir-senha').addEventListener('submit', async (evento) => {
 /* ========================================================================== *
  * Ao abrir a página
  * ========================================================================== */
+/** Preenche o seletor de departamento do primeiro acesso. */
+async function montarDepartamentosDaAtivacao() {
+  const seletor = el('departamento-ativacao');
+  if (!seletor) return;
+  try {
+    const lista = await dados.departamentosSugeridos();
+    seletor.innerHTML =
+      '<option value="">Selecione</option>' +
+      lista.map((n) => `<option value="${escapar(n)}">${escapar(n)}</option>`).join('');
+  } catch (erro) {
+    seletor.innerHTML = '<option value="">Não consegui carregar</option>';
+    console.warn('Lista de departamentos indisponível:', erro);
+  }
+}
+
 async function iniciar() {
   ligarOlhoDaSenha('ver-senha', 'senha');
   ligarOlhoDaSenha('ver-senha-nova', 'senha-nova');
   pintarIcones();
+  montarDepartamentosDaAtivacao();
 
   el('rodape-modo').innerHTML = EH_DEMO
     ? 'Modo demonstração · os dados ficam só neste navegador'

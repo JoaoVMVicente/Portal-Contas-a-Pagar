@@ -78,9 +78,15 @@ async function iniciar() {
   const emailDaConta = sessao.usuario()?.email ?? '';
   const nomeCompleto = [p?.nome, p?.sobrenome].filter(Boolean).join(' ') ||
                        emailDaConta.split('@')[0];
-  el('ident-nome').textContent = nomeCompleto;
-  el('ident-email').textContent = emailDaConta;
-  el('ident-inicial').textContent = (nomeCompleto[0] ?? '?').toUpperCase();
+  // Mesma proteção: a tela não pode morrer por causa de um cartão informativo.
+  const escrever = (id, texto) => {
+    const alvo = el(id);
+    if (alvo) alvo.textContent = texto;
+    else console.warn(`Elemento #${id} não existe — o cliente.html está desatualizado.`);
+  };
+  escrever('ident-nome', nomeCompleto);
+  escrever('ident-email', emailDaConta);
+  escrever('ident-inicial', (nomeCompleto[0] ?? '?').toUpperCase());
 
   ligarUpload();
   ligarEnvio();
@@ -112,6 +118,16 @@ async function iniciar() {
  */
 async function montarDepartamento() {
   const area = el('bloco-departamento');
+
+  // Se o cliente.html na pasta for de uma versão anterior, este bloco não
+  // existe. Antes, isso derrubava a tela inteira com "Cannot set properties of
+  // null" — e a pessoa perdia "Meus boletos" por causa de um campo opcional.
+  // Um pedaço da tela que não carrega não deve levar o resto junto.
+  if (!area) {
+    console.warn('#bloco-departamento não existe. O cliente.html é de uma versão anterior.');
+    return;
+  }
+
   const atual = sessao.meuDepartamento();
 
   if (atual) {
@@ -130,12 +146,12 @@ async function montarDepartamento() {
     return;
   }
 
-  // Ainda não informou. Pedimos uma vez, aqui mesmo.
-  let sugestoes = [];
+  // Ainda não escolheu. Pedimos uma vez, aqui mesmo.
+  let lista = [];
   try {
-    sugestoes = await dados.departamentosSugeridos();
+    lista = await dados.departamentosSugeridos();
   } catch (erro) {
-    console.warn(erro);
+    console.warn('Não consegui carregar a lista de departamentos:', erro);
   }
 
   area.innerHTML = `
@@ -143,23 +159,22 @@ async function montarDepartamento() {
       Seu departamento <span class="obrigatorio">*</span>
     </label>
     <div style="display:flex;gap:8px;align-items:flex-start;">
-      <input type="text" id="departamento" list="lista-departamentos" maxlength="60"
-             placeholder="Ex.: Financeiro" style="flex:1 1 auto;" />
+      <select id="departamento" style="flex:1 1 auto;">
+        <option value="">Selecione</option>
+        ${lista.map((n) => `<option value="${escapar(n)}">${escapar(n)}</option>`).join('')}
+      </select>
       <button type="button" class="botao botao--contorno" id="salvar-departamento">Guardar</button>
     </div>
-    <datalist id="lista-departamentos">
-      ${sugestoes.map((n) => `<option value="${escapar(n)}"></option>`).join('')}
-    </datalist>
     <span class="campo__dica">
-      Você informa uma vez só. Depois ele vai junto em todos os seus boletos.
+      Você escolhe uma vez só. Depois ele vai junto em todos os seus boletos.
     </span>
     <span class="campo__erro oculto" id="erro-departamento"></span>`;
 
   el('salvar-departamento').addEventListener('click', async (ev) => {
-    const valor = el('departamento').value.trim();
-    if (valor.length < 2) {
+    const valor = el('departamento').value;
+    if (!valor) {
       const erro = el('erro-departamento');
-      erro.innerHTML = `${ICONES.alerta}Escreva o seu departamento.`;
+      erro.innerHTML = `${ICONES.alerta}Escolha o seu departamento.`;
       erro.classList.remove('oculto');
       return;
     }

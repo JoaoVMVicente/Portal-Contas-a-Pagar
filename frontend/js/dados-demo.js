@@ -250,6 +250,7 @@ export function criarDriverDemo() {
         papel: conta.papel,
         escopo: conta.escopo,
         pode_descartar: Boolean(conta.podeDescartar),
+        departamento: conta.departamento ?? null,
       },
     };
   }
@@ -375,7 +376,7 @@ export function criarDriverDemo() {
     },
 
     /** Fecha o primeiro acesso: guarda a senha e entra. */
-    async concluirPrimeiroAcesso({ token, email, senha, nome, sobrenome }) {
+    async concluirPrimeiroAcesso({ token, email, senha, nome, sobrenome, departamento }) {
       const s = await estado();
       const chave = String(email ?? '').toLowerCase().trim();
       const conta = s.contas[chave];
@@ -392,6 +393,7 @@ export function criarDriverDemo() {
       conta.tokenAtivacao = null;
       if (nome) conta.nome = nome;
       if (sobrenome) conta.sobrenome = sobrenome;
+      if (departamento) conta.departamento = departamento;
 
       s.sessao = { email: chave, id: `demo-${chave}` };
       gravar(s);
@@ -538,6 +540,29 @@ export function criarDriverDemo() {
     },
 
     async criarBoleto(registro, arquivo, aoProgredir) {
+      // Simula os gatilhos do banco (db/13 e db/14): identidade e departamento
+      // vêm do perfil autenticado, e o que o navegador manda é descartado. Se a
+      // demonstração aceitasse, ela mentiria sobre a segurança do portal real.
+      {
+        const sAgora = await estado();
+        const perfilAgora = montarSessao(sAgora).perfil;
+        if (!perfilAgora) throw erro('Entre no portal antes de enviar.', 'sem_perfil');
+
+        const informado = registro.solicitante_email;
+        if (informado && informado.toLowerCase() !== perfilAgora.email.toLowerCase()) {
+          registro.solicitante_informado =
+            `informou ${informado}, mas está logado como ${perfilAgora.email}`;
+        }
+        registro.solicitante_email = perfilAgora.email;
+        registro.solicitante_nome = perfilAgora.nome;
+        registro.solicitante_sobrenome = perfilAgora.sobrenome;
+
+        if (!perfilAgora.departamento) {
+          throw erro('Escolha o seu departamento antes de enviar boletos.', 'sem_departamento');
+        }
+        registro.departamento = perfilAgora.departamento;
+      }
+
       // Simula o gatilho trg_carimbar_solicitante (db/13): o que o navegador
       // manda nos campos de identidade é DESCARTADO e substituído pelo perfil
       // autenticado. Se a demonstração aceitasse, ela mentiria sobre a
@@ -804,6 +829,28 @@ export function criarDriverDemo() {
       gravar(s);
       avisar();
       return enfeitar(b);
+    },
+
+    async definirMeuDepartamento(departamento) {
+      const s = await estado();
+      const sessao = montarSessao(s);
+      const escolhido = String(departamento ?? '').trim();
+
+      // Mesma regra do db/15: só vale o que está na lista.
+      const oficial = DEPARTAMENTOS.find(
+        (d) => d.toLocaleUpperCase('pt-BR') === escolhido.toLocaleUpperCase('pt-BR')
+      );
+      if (!oficial) throw erro(`"${escolhido}" não está na lista de departamentos.`, 'departamento');
+
+      const conta = s.contas[sessao.usuario?.email];
+      if (!conta) throw erro('Sua conta não tem perfil no portal.', 'sem_perfil');
+      conta.departamento = oficial;
+      gravar(s);
+      return { ...conta };
+    },
+
+    async departamentosSugeridos() {
+      return [...DEPARTAMENTOS];
     },
 
     async marcarComoVistos() {

@@ -111,6 +111,20 @@
               <label class="campo__rotulo" for="sobrenome-ativacao">Sobrenome</label>
               <input type="text" id="sobrenome-ativacao" autocomplete="family-name" />
             </div>
+
+          <div class="campo campo--largo">
+            <label class="campo__rotulo" for="departamento-ativacao">
+              Seu departamento <span class="obrigatorio">*</span>
+            </label>
+            <select id="departamento-ativacao">
+              <option value="">Carregando...</option>
+            </select>
+            <span class="campo__dica">
+              Você escolhe uma vez só. Depois ele vai junto em todos os boletos
+              que enviar, sem precisar escolher de novo.
+            </span>
+            <span class="campo__erro oculto" id="erro-departamento-ativacao"></span>
+          </div>
           </div>
 
           <div class="campo" style="margin-top:16px;">
