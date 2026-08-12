@@ -190,6 +190,67 @@ export async function acharEmpresa(documento) {
 }
 
 /**
+ * Procura, no texto do boleto, o nome de alguma empresa do grupo.
+ *
+ * POR QUE ISTO É NECESSÁRIO
+ * -------------------------
+ * A regra principal — "o CNPJ que está na planilha é a nossa empresa" — depende
+ * de haver um CNPJ legível. Dois boletos reais mostraram que nem sempre há:
+ *
+ *   Itaú/Ingram Micro : o documento não traz CNPJ nenhum. Nem o nosso, nem o do
+ *                       fornecedor. Só "SACADO: SERENA GERACAO SA".
+ *   Neoenergia        : o CNPJ do pagador vem MASCARADO, com asteriscos no
+ *                       lugar dos oito últimos dígitos.
+ *
+ * Nos dois casos o nome está lá, por extenso. E como a busca já normaliza
+ * algarismos romanos e conhece 108 denominações antigas, "PARQUE EOLICO VENTOS
+ * DA BAHIA IX SA" encontra a empresa que hoje se chama outra coisa.
+ *
+ * Casamos o nome INTEIRO da empresa dentro do texto, não pedaços — senão
+ * "DELTA" acharia qualquer uma das dezenas de Deltas.
+ */
+export async function acharEmpresaNoTexto(texto) {
+  const p = await carregarContas();
+  const alvo = chaveDeNome(texto);
+  if (alvo.length < 10) return null;
+
+  const achados = [];
+
+  for (const e of p.empresas) {
+    const nomes = [e.razaoSocial, e.razaoSocialJuridica, ...e.nomesAlternativos].filter(Boolean);
+
+    for (const nome of nomes) {
+      const chave = chaveDeNome(nome);
+      // Nome curto demais casa por acidente. "GD 10" tem 4 caracteres na chave.
+      if (chave.length < 10) continue;
+
+      const posicao = alvo.indexOf(chave);
+      if (posicao === -1) continue;
+
+      // O trecho seguinte não pode ser continuação de outro nome: "DELTA 1"
+      // não deve casar dentro de "DELTA 10".
+      const depois = alvo[posicao + chave.length];
+      if (depois && /[A-Z0-9]/.test(depois)) continue;
+
+      achados.push({ empresa: e, nomeQueCasou: nome, tamanho: chave.length });
+      break;
+    }
+  }
+
+  if (!achados.length) return null;
+
+  // O nome mais longo é o mais específico: entre "SERENA GERACAO" e
+  // "SERENA GERACAO COMERCIALIZADORA", o segundo é a resposta certa.
+  achados.sort((a, b) => b.tamanho - a.tamanho);
+
+  return {
+    empresa: achados[0].empresa,
+    nomeQueCasou: achados[0].nomeQueCasou,
+    ambiguo: achados.length > 1 && achados[0].tamanho === achados[1]?.tamanho,
+  };
+}
+
+/**
  * Esta é a função que o boleto-campos.js usa para separar nós de eles.
  * Responde "este documento é de uma empresa do grupo?" — considerando a raiz.
  */

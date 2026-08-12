@@ -86,7 +86,7 @@ export function cpfValido(entrada) {
  * é o que usamos depois para tentar pescar o nome ao lado do número.
  */
 export function acharDocumentosNoTexto(texto) {
-  const t = String(texto ?? '');
+  const t = apagarCodigosDeBarras(String(texto ?? ''));
   const achados = [];
   const suspeitos = [];
   const jaVistos = new Set();
@@ -149,6 +149,36 @@ export function acharDocumentosNoTexto(texto) {
   return achados;
 }
 
+/* ========================================================================== *
+ * Apagar a linha digitável antes de procurar CNPJ
+ * ========================================================================== *
+ * Este é o erro mais bobo e mais destrutivo que o portal cometia.
+ *
+ * A linha digitável termina com quatorze dígitos — fator de vencimento mais
+ * valor. Quatorze dígitos é exatamente o tamanho de um CNPJ. Então em
+ *
+ *   BANCO BRADESCO SA 237-2 23792.37205 90000.024126 77003.910708 1 15130000272219
+ *                                                                   +- 14 digitos -+
+ *
+ * o garimpo lia "15.130.000/2722-19" como CNPJ do fornecedor. Repare no final:
+ * 2722-19 é o próprio valor do boleto, R$ 2.722,19. O mesmo aconteceu num
+ * boleto do Itaú com 14820000894839, onde o valor era R$ 8.948,39.
+ *
+ * Apagamos essas sequências ANTES de procurar documento. Elas não contêm CNPJ
+ * nenhum, então não se perde nada.
+ */
+const RE_LINHA_DIGITAVEL =
+  /\d{5}[.\s]?\d{5}\s+\d{5}[.\s]?\d{6}\s+\d{5}[.\s]?\d{6}\s+\d\s+\d{14}/g;
+const RE_CODIGO_BARRAS = /\b\d{44,48}\b/g;
+
+function apagarCodigosDeBarras(texto) {
+  // Troca por espaços em vez de remover: as posições continuam batendo com o
+  // texto original, e é delas que sai o nome que vem antes do CNPJ.
+  return String(texto ?? '')
+    .replace(RE_LINHA_DIGITAVEL, (m) => ' '.repeat(m.length))
+    .replace(RE_CODIGO_BARRAS, (m) => ' '.repeat(m.length));
+}
+
 /** A linha de texto inteira em volta de uma posição. */
 function linhaEmVolta(texto, posicao) {
   const inicio = texto.lastIndexOf('\n', posicao) + 1;
@@ -188,12 +218,31 @@ function linhaAcima(texto, posicao) {
  * Por isso olhamos a linha atual E a de cima.
  */
 const ROTULOS_DE_BENEFICIARIO = [
-  'BENEFICIARIO', 'CEDENTE', 'FAVORECIDO', 'CREDOR', 'EMITENTE',
+  'BENEFICIARIO', 'CEDENTE', 'FAVORECIDO', 'CREDOR', 'EMITENTE', 'SACADOR',
 ];
 
 const ROTULOS_DE_PAGADOR = [
-  'PAGADOR', 'SACADO', 'DEVEDOR', 'CLIENTE', 'TOMADOR',
+  'PAGADOR', 'SACADO', 'DEVEDOR', 'TOMADOR',
 ];
+
+/**
+ * SACADO e SACADOR são pessoas OPOSTAS, e a diferença é uma letra:
+ *
+ *   SACADO  = quem paga  (nós)
+ *   SACADOR = quem cobra (o fornecedor)
+ *
+ * A primeira versão procurava por trecho contido, então "Beneficiário/Sacador"
+ * casava com BENEFICIARIO e com SACADO ao mesmo tempo. Como os dois lados
+ * apareciam, a função desistia e devolvia "não sei" — jogando fora o rótulo
+ * mais confiável do boleto.
+ *
+ * Comparar palavra inteira resolve. E CLIENTE saiu da lista de pagador: aparece
+ * em texto solto o tempo todo ("CÓDIGO DO CLIENTE", "atendimento ao cliente") e
+ * produzia rótulo falso.
+ */
+function temPalavra(texto, palavra) {
+  return new RegExp(`(?<![A-Z])${palavra}(?![A-Z])`).test(texto);
+}
 
 /**
  * Diz se um documento aparece sob rótulo de beneficiário ou de pagador.
@@ -205,9 +254,9 @@ function classificarPeloRotulo(doc) {
   // "Beneficiário Final" é outra coisa: é um campo que quase sempre vem vazio,
   // e confundir com o beneficiário de verdade daria o nome errado.
   const temBeneficiario = ROTULOS_DE_BENEFICIARIO.some(
-    (r) => contexto.includes(r) && !contexto.includes(`${r} FINAL`)
+    (r) => temPalavra(contexto, r) && !contexto.includes(`${r} FINAL`)
   );
-  const temPagador = ROTULOS_DE_PAGADOR.some((r) => contexto.includes(r));
+  const temPagador = ROTULOS_DE_PAGADOR.some((r) => temPalavra(contexto, r));
 
   // Os dois na mesma vizinhança não decide nada.
   if (temBeneficiario && temPagador) return null;
@@ -250,7 +299,20 @@ export function separarEmpresaEFornecedor(texto, ehNossaEmpresa) {
   const naPlanilha = todos.filter((d) => d.nosso);
   const sobRotuloDePagador = todos.filter((d) => !d.nosso && d.rotulo === 'pagador');
 
-  let unidade = naPlanilha[0] ?? null;
+  // O rótulo manda mais que a lista quando os dois lados são do grupo.
+  //
+  // Num boleto real, o beneficiário era o CONSÓRCIO SERENA GD 10 e o pagador
+  // era a DELTA 3 I — as DUAS na planilha, porque o consórcio também é do
+  // grupo. A regra "está na planilha, logo é nossa empresa" empatava, e o
+  // fornecedor ficava sem ninguém.
+  //
+  // Quem tem rótulo de pagador é a nossa empresa, mesmo que outro CNPJ do
+  // grupo apareça antes no documento.
+  let unidade =
+    naPlanilha.find((d) => d.rotulo === 'pagador') ??
+    naPlanilha.find((d) => d.rotulo !== 'beneficiario') ??
+    naPlanilha[0] ??
+    null;
 
   if (!unidade && sobRotuloDePagador.length) {
     unidade = sobRotuloDePagador[0];
@@ -282,27 +344,35 @@ export function separarEmpresaEFornecedor(texto, ehNossaEmpresa) {
    * para o campo do fornecedor.
    * ------------------------------------------------------------------ */
   const idUnidade = unidade?.digitos;
-  const deFora = todos.filter((d) => !d.nosso && d.digitos !== idUnidade);
+
+  // Um CNPJ do grupo PODE ser o fornecedor, se estiver sob rótulo de
+  // beneficiário. É o caso do consórcio cobrando de uma SPE do próprio grupo.
+  const candidatos = todos.filter((d) => d.digitos !== idUnidade);
 
   let fornecedor =
-    deFora.find((d) => d.rotulo === 'beneficiario') ??
-    deFora.find((d) => d.rotulo !== 'pagador') ??
+    candidatos.find((d) => d.rotulo === 'beneficiario') ??
+    candidatos.find((d) => !d.nosso && d.rotulo !== 'pagador') ??
     null;
 
+  // CNPJ com dígito verificador quebrado NÃO vira fornecedor.
+  //
+  // A versão anterior usava como último recurso, e o resultado era pior que
+  // deixar em branco: um número plausível, no campo certo, que a pessoa podia
+  // aceitar sem conferir. Foi assim que a linha digitável virou "CNPJ do
+  // fornecedor" em dois boletos. Agora só avisamos que existe algo parecido.
   if (!fornecedor) {
     const suspeitosDeFora = todosSuspeitos.filter(
       (d) => !d.nosso && d.digitos !== idUnidade && d.rotulo !== 'pagador'
     );
     if (suspeitosDeFora.length) {
-      fornecedor = suspeitosDeFora.find((d) => d.rotulo === 'beneficiario') ?? suspeitosDeFora[0];
       avisos.push(
-        'O CNPJ do fornecedor não passou na verificação do dígito — provavelmente um número ' +
-          'foi lido errado. Confira dígito por dígito antes de enviar.'
+        'Achei algo com cara de CNPJ do fornecedor, mas o dígito verificador não fecha. ' +
+          'Deixei em branco de propósito — preencher com número errado é pior que deixar vazio.'
       );
     }
   }
 
-  const candidatosAFornecedor = new Set(deFora.map((d) => d.digitos));
+  const candidatosAFornecedor = new Set(candidatos.filter((d) => !d.nosso).map((d) => d.digitos));
   if (candidatosAFornecedor.size > 1 && fornecedor?.rotulo !== 'beneficiario') {
     avisos.push(
       `Achei ${candidatosAFornecedor.size} CNPJs de fora do grupo e nenhum sob rótulo de ` +
@@ -562,12 +632,16 @@ const PALAVRAS_DE_ROTULO = new Set([
  */
 function limparNome(texto) {
   const semPadroes = String(texto ?? '')
+    // DATAS PRIMEIRO. A ordem importa: o padrão de CNPJ aceita espaço como
+    // separador, então numa linha como
+    //     INGRAM MICRO BRASIL LTDA 1011/25090-7 109/232772551 19/06/2026
+    // ele mordia "…232772551 19/06/20" e deixava um "26" solto grudado no
+    // nome. Tirando as datas antes, isso não acontece.
+    .replace(/\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b/g, ' ')
+    .replace(/\b\d{1,2}[/.-]\d{1,2}[/.-]?/g, ' ')
     // documentos
     .replace(/\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}/g, ' ')
     .replace(/\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}/g, ' ')
-    // datas em qualquer forma, inclusive incompletas ("03/08/")
-    .replace(/\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b/g, ' ')
-    .replace(/\b\d{1,2}[/.-]\d{1,2}[/.-]?/g, ' ')
     // CEP
     .replace(/\bCEP[:\s]*\d{5}-?\d{3}\b/gi, ' ')
     // números longos (nosso número, código de barras, agência/conta)
@@ -580,6 +654,16 @@ function limparNome(texto) {
     .filter((palavra) => {
       const chave = semAcento(palavra).replace(/[^A-Z0-9]/g, '');
       if (!chave) return false;
+      // Sobra de número já cortado: "4073/12491-1" vira "/-1" quando os
+      // números longos saem. Esse resto é lixo.
+      //
+      // Mas cuidado: número SOZINHO faz parte de nome de empresa —
+      // "CONSÓRCIO SERENA GD 10", "DELTA 7", "ARCO ENERGIA 6". A primeira
+      // versão desta regra comeu o "10" do consórcio.
+      //
+      // A distinção é a pontuação: "10" fica, "/-1" sai.
+      const semLetra = !/[A-Z]/.test(semAcento(palavra));
+      if (semLetra && /[^0-9]/.test(palavra)) return false;
       return !PALAVRAS_DE_ROTULO.has(chave);
     })
     .join(' ');
@@ -596,16 +680,29 @@ function limparNome(texto) {
  */
 /**
  * Tira o carimbo que navegador e cliente de e-mail põem ao imprimir em PDF.
- * Foi o que fez uma fatura da Enel devolver a data da IMPRESSÃO como
- * vencimento — um número plausível, no campo certo, e nada avisando.
+ *
+ * POR QUE ISTO IMPORTA MAIS DO QUE PARECE
+ * ---------------------------------------
+ * Uma fatura da Enel chegou como PDF impresso do Outlook. O arquivo inteiro
+ * era imagem, e o único texto de verdade era o carimbo da impressão:
+ *
+ *     "17/07/2026, 17:23 Caixa de Entrada - João ... - Outlook"
+ *     "https://outlook.cloud.microsoft/mail/id/AAQk..."
+ *
+ * O portal procurou uma data no texto, achou "17/07/2026" — a hora em que a
+ * pessoa imprimiu o e-mail — e ofereceu isso como vencimento. Um número
+ * plausível, no campo certo, e nada indicando que era lixo. Esse é o tipo de
+ * erro pior que não achar nada: não achar nada avisa, isto engana.
+ *
+ * Estas linhas nunca fazem parte do documento, então saem antes de tudo.
  */
 const LINHAS_DE_CARIMBO = [
-  /^\s*https?:\/\/\S+\s*(\d+\s*\/\s*\d+)?\s*$/i,
-  /\boutlook\b/i,
+  /^\s*https?:\/\/\S+\s*(\d+\s*\/\s*\d+)?\s*$/i,      // a URL do rodapé
+  /\boutlook\b/i,                                          // "... - Outlook"
   /caixa de entrada/i,
   /\bgmail\b/i,
-  /\d{1,2}\/\d{1,2}\/\d{4},?\s+\d{1,2}:\d{2}/,
-  /^\s*\d+\s*\/\s*\d+\s*$/,
+  /\d{1,2}\/\d{1,2}\/\d{4},?\s+\d{1,2}:\d{2}/,             // "17/07/2026, 17:23"
+  /^\s*\d+\s*\/\s*\d+\s*$/,                                // "1/2" (nº da página)
   /javascript:|about:blank/i,
 ];
 

@@ -33,6 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 import campos from '../../../frontend/js/boleto-campos.js';
+import * as R from './fixtures-boletos-reais.mjs';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const CAMINHO_JSON = resolve(AQUI, '../../../frontend/data/contas-bancarias.json');
@@ -229,17 +230,97 @@ for (const entrada of ['', '   ', null, undefined, 'texto sem nada útil', '0000
   });
 }
 
-teste('CNPJ com dígito verificador quebrado vem marcado como não conferido', () => {
+teste('CNPJ com dígito quebrado NÃO é usado — fica em branco, com aviso', () => {
+  // Mudança deliberada de comportamento. A versão anterior preenchia o campo
+  // com o número suspeito. Isso é pior que deixar vazio: um número plausível,
+  // no lugar certo, que a pessoa aceita sem conferir. Foi assim que os 14
+  // dígitos finais da linha digitável viraram "CNPJ do fornecedor" em dois
+  // boletos reais.
   const r = campos.extrairCamposDoTexto(
     'Beneficiário: BETA LTDA CNPJ 33.111.222/0001-44\nPagador: SERENA GERACAO S.A. CNPJ 09.149.503/0001-06',
     { ehNossaEmpresa }
   );
-  igual(r.fornecedorCnpj, '33111222000144', 'CNPJ do fornecedor');
-  igual(r.fornecedorCnpjConferido, false, 'conferido');
+  igual(r.fornecedorCnpj, null, 'CNPJ do fornecedor');
   if (!r.avisos.some((a) => /dígito/i.test(a))) {
     throw new Error('faltou o aviso sobre o dígito verificador');
   }
 });
+
+/* ========================================================================== *
+ * OS CINCO BOLETOS REAIS
+ * ========================================================================== */
+grupo('Boletos reais — cinco bancos, cinco falhas diferentes');
+
+const REAIS = [
+  {
+    nome: 'Itaú / Ingram Micro — nenhum CNPJ no documento inteiro',
+    texto: R.ITAU_INGRAM,
+    empresaEsperada: null, // só o nome está no papel
+    empresaPeloNome: 'SERENA GERAÇÃO',
+    fornecedor: 'INGRAM MICRO BRASIL LTDA',
+    fornecedorCnpj: null,
+  },
+  {
+    nome: 'Itaú / Randstad — cedente sem CNPJ, e data grudada no número',
+    texto: R.ITAU_RANDSTAD,
+    empresaEsperada: '42500384000151',
+    fornecedor: 'RANDSTAD BRASIL REC HUMANOS LTDA',
+    fornecedorCnpj: null,
+  },
+  {
+    nome: 'Bradesco / Consórcio — beneficiário e pagador ambos do grupo',
+    texto: R.BRADESCO_CONSORCIO,
+    empresaEsperada: '23598517000200',
+    fornecedor: 'CONSORCIO SERENA GD 10',
+    fornecedorCnpj: '54146558000109',
+  },
+  {
+    nome: 'Itaú / Optum — CNPJ sem pontuação e rótulo "Beneficiário/Sacador"',
+    texto: R.ITAU_OPTUM,
+    empresaEsperada: '09149503000360',
+    fornecedor: 'OHT OPTUM HEALTH TECHNOLOGY',
+    fornecedorCnpj: '18522213000149',
+  },
+  {
+    nome: 'Itaú / Neoenergia — CNPJ do pagador mascarado com asteriscos',
+    texto: R.ITAU_NEOENERGIA,
+    empresaEsperada: null,
+    empresaPeloNome: 'VENTOS DA BAHIA',
+    fornecedor: 'COMPANHIA DE ELETRICIDADE DO ESTADO DA BAHIA',
+    fornecedorCnpj: '15139629000194',
+  },
+];
+
+for (const caso of REAIS) {
+  const r = campos.extrairCamposDoTexto(caso.texto, { ehNossaEmpresa });
+
+  teste(`${caso.nome} — nossa empresa`, () => {
+    igual(r.unidadeCnpj, caso.empresaEsperada, 'CNPJ da unidade');
+  });
+
+  teste(`${caso.nome} — fornecedor`, () => {
+    igual(r.fornecedorRazaoSocial, caso.fornecedor, 'razão social do fornecedor');
+  });
+
+  teste(`${caso.nome} — CNPJ do fornecedor`, () => {
+    igual(r.fornecedorCnpj, caso.fornecedorCnpj, 'CNPJ do fornecedor');
+  });
+
+  teste(`${caso.nome} — nada da linha digitável virou CNPJ`, () => {
+    const soDigitos = caso.texto.replace(/\D+/g, '');
+    for (const achado of [r.unidadeCnpj, r.fornecedorCnpj].filter(Boolean)) {
+      // Um CNPJ de verdade aparece no texto com pontuação, ou isolado. Se ele
+      // só existe dentro da sequência corrida de dígitos, veio do código de
+      // barras.
+      const apareceFormatado =
+        caso.texto.includes(achado) ||
+        new RegExp(achado.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.?\\D?$2.?\\D?$3.?\\D?$4.?\\D?$5')).test(caso.texto);
+      if (!apareceFormatado && soDigitos.includes(achado)) {
+        throw new Error(`${achado} parece ter saído do código de barras`);
+      }
+    }
+  });
+}
 
 /* ========================================================================== */
 console.log('');

@@ -50,39 +50,20 @@
 
             <div class="grupo-campos">
               <div class="campo campo--largo">
-                <span class="campo__rotulo" id="rotulo-tipo">
-                  Estes boletos são de quê? <span class="obrigatorio">*</span>
-                </span>
-                <div class="opcoes-radio" role="radiogroup" aria-labelledby="rotulo-tipo">
-                  <label class="opcao-radio">
-                    <input type="radio" name="tipo" value="NF" checked /> Notas fiscais (NF)
-                  </label>
-                  <label class="opcao-radio">
-                    <input type="radio" name="tipo" value="MD" /> Medições (MD)
-                  </label>
+                <span class="campo__rotulo">Quem está enviando</span>
+                <div class="cartao-identidade">
+                  <span class="cartao-identidade__inicial" id="ident-inicial"></span>
+                  <div>
+                    <span class="cartao-identidade__nome" id="ident-nome"></span>
+                    <span class="cartao-identidade__email" id="ident-email"></span>
+                  </div>
+                  <span class="cartao-identidade__selo" data-icone="cadeado"
+                        title="Vem da sua conta e não pode ser alterado"></span>
                 </div>
                 <span class="campo__dica">
-                  É o que define para qual equipe da operação eles vão. Vale para
-                  todos os arquivos deste envio.
+                  Vem da sua conta. Não dá para enviar boleto em nome de outra
+                  pessoa — o banco registra quem estava logado.
                 </span>
-              </div>
-
-              <div class="campo">
-                <label class="campo__rotulo" for="nome">Seu nome <span class="obrigatorio">*</span></label>
-                <input type="text" id="nome" autocomplete="given-name" />
-                <span class="campo__erro oculto" id="erro-nome"></span>
-              </div>
-
-              <div class="campo">
-                <label class="campo__rotulo" for="sobrenome">Seu sobrenome <span class="obrigatorio">*</span></label>
-                <input type="text" id="sobrenome" autocomplete="family-name" />
-                <span class="campo__erro oculto" id="erro-sobrenome"></span>
-              </div>
-
-              <div class="campo">
-                <label class="campo__rotulo" for="email">Seu e-mail</label>
-                <input type="email" id="email" readonly />
-                <span class="campo__dica">É o e-mail da sua conta. Usamos para avisar do andamento.</span>
               </div>
 
               <div class="campo">

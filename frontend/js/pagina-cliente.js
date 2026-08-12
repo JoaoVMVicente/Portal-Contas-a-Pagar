@@ -43,6 +43,11 @@ const MAXIMO = 20;
 // porque isso exigiria migração, e o ganho seria pequeno: quem troca de
 // departamento troca uma vez na vida.
 const CHAVE_DEPARTAMENTO = 'serena.departamento';
+const CHAVE_TIPO = 'serena.tipo-padrao';
+
+// O tipo do último boleto vira o padrão do próximo. Num lote de quinze notas
+// fiscais, a pessoa escolhe uma vez.
+let ultimoTipoEscolhido = localStorage.getItem(CHAVE_TIPO) || 'NF';
 
 /**
  * Cada arquivo solto vira um item desta lista. O `estado` de cada um conta a
@@ -68,10 +73,15 @@ async function iniciar() {
     avisar('A tela do operador é só para a equipe de operação.', 'atencao', 6000);
   }
 
+  // A identidade é mostrada, não preenchida. O banco carimba de qualquer jeito
+  // (db/13), então um campo editável só criaria a ilusão de que dá para mudar.
   const p = sessao.perfil();
-  el('email').value = sessao.usuario()?.email ?? '';
-  el('nome').value = p?.nome ?? '';
-  el('sobrenome').value = p?.sobrenome ?? '';
+  const emailDaConta = sessao.usuario()?.email ?? '';
+  const nomeCompleto = [p?.nome, p?.sobrenome].filter(Boolean).join(' ') ||
+                       emailDaConta.split('@')[0];
+  el('ident-nome').textContent = nomeCompleto;
+  el('ident-email').textContent = emailDaConta;
+  el('ident-inicial').textContent = (nomeCompleto[0] ?? '?').toUpperCase();
 
   ligarUpload();
   ligarEnvio();
@@ -204,6 +214,11 @@ async function receberArquivos(listaBruta) {
     itens.push({
       id: `item-${Math.random().toString(36).slice(2, 10)}`,
       arquivo,
+      // Tipo e número passam a ser POR BOLETO. O tipo porque um lote pode
+      // misturar NF e MD. O número porque o que está impresso no boleto
+      // frequentemente NÃO é o número da nota — quem sabe é quem envia.
+      tipo: ultimoTipoEscolhido,
+      numero: '',
       estado: problema ? 'invalido' : jaEsta ? 'duplicado_no_lote' : 'aguardando',
       motivo: problema ?? (jaEsta ? 'este arquivo já está na lista' : null),
       progresso: null,
@@ -223,7 +238,6 @@ async function receberArquivos(listaBruta) {
 async function lerPendentes() {
   await carregarContas();
   const ehNossaEmpresa = await criarVerificadorDeEmpresa();
-  const tipo = tipoEscolhido();
 
   for (const item of itens) {
     if (item.estado !== 'aguardando') continue;
@@ -239,11 +253,13 @@ async function lerPendentes() {
           item.progresso = mensagem;
           atualizarLinha(item);
         },
-        { ehNossaEmpresa, tipoDocumento: tipo }
+        { ehNossaEmpresa, tipoDocumento: item.tipo }
       );
 
       item.lido = lido;
       item.empresa = lido.unidadeCnpj ? await acharEmpresa(lido.unidadeCnpj) : null;
+      // O número lido é sugestão. Quem confirma é quem envia.
+      if (!item.numero) item.numero = lido.numeroDocumento ?? '';
 
       // Este boleto já passou pelo portal?
       if (lido.codigoBarras) {
@@ -267,9 +283,7 @@ async function lerPendentes() {
   desenharResumo();
 }
 
-function tipoEscolhido() {
-  return document.querySelector('input[name=tipo]:checked')?.value ?? 'NF';
-}
+
 
 /* ========================================================================== *
  * Desenhar a lista
@@ -332,6 +346,27 @@ function desenharLista() {
 
   area.querySelectorAll('[data-copiar]').forEach((botao) => {
     botao.addEventListener('click', () => copiar(botao.dataset.copiar, 'Código copiado.'));
+  });
+
+  area.querySelectorAll('[data-tipo]').forEach((seletor) => {
+    seletor.addEventListener('change', () => {
+      const item = itens.find((x) => x.id === seletor.dataset.tipo);
+      if (!item) return;
+      item.tipo = seletor.value;
+      ultimoTipoEscolhido = seletor.value;
+      localStorage.setItem(CHAVE_TIPO, seletor.value);
+      // Só o rótulo do campo ao lado muda ("Nº da nota" / "Nº da medição"),
+      // então redesenhamos o item. Não relemos o arquivo: o tipo influencia
+      // pouco a leitura e reler quinze arquivos por uma troca seria caro.
+      desenharLista();
+    });
+  });
+
+  area.querySelectorAll('[data-numero]').forEach((campo) => {
+    campo.addEventListener('input', () => {
+      const item = itens.find((x) => x.id === campo.dataset.numero);
+      if (item) item.numero = campo.value;
+    });
   });
 
   atualizarBotaoEnviar();
@@ -413,6 +448,25 @@ function linhaDoItem(item) {
            </div>`
         : ''
     }
+    ${
+      podeEnviar(item) || item.estado === 'enviando'
+        ? `<div class="lista-boletos__editaveis">
+             <label class="mini-campo">
+               <span>Tipo</span>
+               <select data-tipo="${item.id}" ${enviando ? 'disabled' : ''}>
+                 <option value="NF" ${item.tipo === 'NF' ? 'selected' : ''}>Nota fiscal</option>
+                 <option value="MD" ${item.tipo === 'MD' ? 'selected' : ''}>Medição</option>
+               </select>
+             </label>
+             <label class="mini-campo mini-campo--largo">
+               <span>Nº da ${item.tipo === 'MD' ? 'medição' : 'nota fiscal'}</span>
+               <input type="text" data-numero="${item.id}" ${enviando ? 'disabled' : ''}
+                      value="${escapar(item.numero ?? '')}"
+                      placeholder="${escapar(item.lido?.numeroDocumento ?? 'digite o número')}" />
+             </label>
+           </div>`
+        : ''
+    }
     ${anteriores}
   </div>`;
 }
@@ -474,16 +528,6 @@ function atualizarBotaoEnviar() {
  * Enviar
  * ========================================================================== */
 function ligarEnvio() {
-  document.querySelectorAll('input[name=tipo]').forEach((radio) => {
-    radio.addEventListener('change', () => {
-      // O tipo influencia o palpite do número do documento, então relemos.
-      itens.forEach((i) => {
-        if (podeEnviar(i)) i.estado = 'aguardando';
-      });
-      lerPendentes();
-    });
-  });
-
   el('botao-atualizar-meus').addEventListener('click', () => carregarMeusBoletos());
 
   el('formulario-envio').addEventListener('submit', async (evento) => {
@@ -492,21 +536,29 @@ function ligarEnvio() {
 
     document.querySelectorAll('.campo__erro').forEach((e) => e.classList.add('oculto'));
 
-    const nome = el('nome').value.trim();
-    const sobrenome = el('sobrenome').value.trim();
     const departamento = el('departamento').value;
-    if (!nome) return marcarErro('nome', 'Preencha seu nome.');
-    if (!sobrenome) return marcarErro('sobrenome', 'Preencha seu sobrenome.');
     if (!departamento) return marcarErro('departamento', 'Escolha o seu departamento.');
 
     const fila = itens.filter(podeEnviar);
     if (!fila.length) return avisar('Nenhum arquivo pronto para enviar.', 'atencao');
 
+    // O número da nota é o único campo que só quem envia sabe: o que está
+    // impresso no boleto muitas vezes é outra coisa (número do título, do
+    // contrato, da fatura). Sem ele, a operação não tem como cruzar.
+    const semNumero = fila.filter((i) => !String(i.numero ?? '').trim());
+    if (semNumero.length) {
+      el('erro-arquivo').innerHTML =
+        `${ICONES.alerta}Falta o número da NF ou MD em ${semNumero.length} boleto(s). ` +
+        'Preencha nos campos de cada arquivo.';
+      el('erro-arquivo').classList.remove('oculto');
+      document.querySelector(`[data-numero="${semNumero[0].id}"]`)?.focus();
+      return;
+    }
+
     enviando = true;
     atualizarBotaoEnviar();
     el('progresso-envio').classList.remove('oculto');
 
-    const tipo = tipoEscolhido();
     const observacoes = el('observacoes').value.trim() || null;
     const resultados = [];
 
@@ -521,7 +573,7 @@ function ligarEnvio() {
 
       try {
         const criado = await dados.criarBoleto(
-          montarRegistro(item, { tipo, nome, sobrenome, departamento, observacoes }),
+          montarRegistro(item, { departamento, observacoes }),
           item.arquivo
         );
         item.estado = 'enviado';
@@ -558,15 +610,16 @@ function ligarEnvio() {
  * O registro que vai para o banco. Campos não lidos vão como null de propósito
  * — o banco aceita (db/10) e a operação completa depois.
  */
-function montarRegistro(item, { tipo, nome, sobrenome, departamento, observacoes }) {
+function montarRegistro(item, { departamento, observacoes }) {
   const l = item.lido ?? {};
   const empresa = item.empresa?.empresa ?? null;
 
   return {
-    solicitante_nome: nome,
-    solicitante_sobrenome: sobrenome,
-    tipo_documento: tipo,
-    numero_documento: l.numeroDocumento ?? null,
+    // Nome, sobrenome e e-mail NÃO vão daqui. O banco carimba a partir da conta
+    // autenticada (db/13). Mandar seria inútil: seria descartado, e ainda
+    // registraria uma divergência de identidade no histórico.
+    tipo_documento: item.tipo,
+    numero_documento: String(item.numero ?? '').trim() || null,
     documento_regularizado: false, // quem confirma isso é a operação
 
     // A conta fica em branco: com 69% das empresas tendo mais de uma, não há

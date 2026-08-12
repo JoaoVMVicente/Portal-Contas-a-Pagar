@@ -44,6 +44,7 @@ import { CONFIG } from './config.js';
 import parser from './boleto-parser.js';
 import campos from './boleto-campos.js';
 import grafico from './leitor-grafico.js';
+import { acharEmpresaNoTexto } from './contas.js';
 
 /* ========================================================================== *
  * Carregar bibliotecas, com endereço alternativo se um CDN cair
@@ -382,6 +383,7 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
    * é o número da nota: a chave fiscal é o número OFICIAL do documento, então
    * ela ganha de um palpite de rótulo.
    */
+  const avisos = [...(base.avisos ?? []), ...(doTexto.avisos ?? [])];
   const doQr = { usados: [] };
 
   if (doGrafico?.fiscal) {
@@ -407,6 +409,32 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
     }
   }
 
+  /* ---------------------------------------------------------------------- *
+   * A nossa empresa pelo NOME, quando o CNPJ não deu
+   * ---------------------------------------------------------------------- *
+   * Último recurso, e vale só para a NOSSA empresa: o nome dela está na nossa
+   * planilha, então casar por nome é consulta, não palpite. Para fornecedor
+   * não daria — não temos a lista deles (ainda).
+   */
+  if (!doTexto.unidadeCnpj && texto.trim()) {
+    try {
+      const achado = await acharEmpresaNoTexto(texto);
+      if (achado) {
+        doTexto.unidadeCnpj = achado.empresa.documento;
+        doTexto.unidadePorNome = achado.nomeQueCasou;
+        avisos.push(
+          `O boleto não trouxe um CNPJ do grupo legível. Identifiquei a empresa pelo nome ` +
+            `"${achado.nomeQueCasou}" — confira se está certo.`
+        );
+        if (achado.ambiguo) {
+          avisos.push('Mais de uma empresa do grupo casou com o nome. Confira com atenção.');
+        }
+      }
+    } catch (erro) {
+      console.warn('Busca da empresa por nome falhou:', erro);
+    }
+  }
+
   if (doGrafico?.pix) {
     const p = doGrafico.pix;
     if (!doTexto.fornecedorRazaoSocial && p.nomeRecebedor) {
@@ -421,7 +449,6 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
     }
   }
 
-  const avisos = [...(base.avisos ?? []), ...(doTexto.avisos ?? [])];
 
   if (doGrafico?.codigoBarras) {
     avisos.push('Valor e vencimento vieram do código de barras lido da imagem, e o dígito verificador fechou.');

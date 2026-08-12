@@ -30,7 +30,8 @@ import { CONFIG, problemaComEmail } from './config.js';
 const CHAVE = 'serena.demo.v2';
 
 const ADMINS = {
-  'joao.vicente@srna.co': { nome: 'João', sobrenome: 'Vicente', escopo: 'ambos' },
+  // podeDescartar reproduz a coluna pode_descartar de admin_emails (db/11).
+  'joao.vicente@srna.co': { nome: 'João', sobrenome: 'Vicente', escopo: 'ambos', podeDescartar: true },
   'sit.pedro.moreira@ext.srna.co': { nome: 'Pedro', sobrenome: 'Moreira', escopo: 'ambos' },
   'thais.lima@srna.co': { nome: 'Thaís', sobrenome: 'Lima', escopo: 'MD' },
   'ran.karoline.lima@ext.srna.co': { nome: 'Karoline', sobrenome: 'Lima', escopo: 'MD' },
@@ -199,6 +200,7 @@ export function criarDriverDemo() {
         sobrenome: dados.sobrenome,
         papel: 'admin',
         escopo: dados.escopo,
+        podeDescartar: Boolean(dados.podeDescartar),
         senhaResumo: null, // sem senha ainda: precisa do primeiro acesso
         emailConfirmado: false,
         tokenAtivacao: null,
@@ -247,6 +249,7 @@ export function criarDriverDemo() {
         nome_completo: `${conta.nome} ${conta.sobrenome}`.trim(),
         papel: conta.papel,
         escopo: conta.escopo,
+        pode_descartar: Boolean(conta.podeDescartar),
       },
     };
   }
@@ -449,6 +452,7 @@ export function criarDriverDemo() {
       porPagina = CONFIG.LINHAS_POR_PAGINA,
       ordenarPor = 'data_envio',
       ordem = 'desc',
+      nulosPrimeiro = null,
     } = {}) {
       const s = await estado();
       const sessao = montarSessao(s);
@@ -485,12 +489,25 @@ export function criarDriverDemo() {
         );
       }
 
+      // A mesma regra do driver do Supabase: nulo vai para o topo quando se
+      // ordena por vencimento crescente, porque "não sei quando vence" é mais
+      // urgente que "vence em trinta dias".
+      const nulos = nulosPrimeiro ?? (ordenarPor === 'vencimento' && ordem === 'asc');
+
       linhas.sort((a, b) => {
-        const va = a[ordenarPor] ?? '';
-        const vb = b[ordenarPor] ?? '';
-        const cmp = typeof va === 'number' && typeof vb === 'number'
-          ? va - vb
-          : String(va).localeCompare(String(vb), 'pt-BR');
+        const va = a[ordenarPor];
+        const vb = b[ordenarPor];
+
+        const aVazio = va == null || va === '';
+        const bVazio = vb == null || vb === '';
+        if (aVazio && bVazio) return 0;
+        if (aVazio) return nulos ? -1 : 1;
+        if (bVazio) return nulos ? 1 : -1;
+
+        const cmp =
+          typeof va === 'number' && typeof vb === 'number'
+            ? va - vb
+            : String(va).localeCompare(String(vb), 'pt-BR');
         return ordem === 'asc' ? cmp : -cmp;
       });
 
@@ -507,16 +524,39 @@ export function criarDriverDemo() {
 
     async kpis(tipo = null) {
       const { linhas } = await this.listarBoletos({ escopo: 'todos', tipo, porPagina: 100000 });
+      // Descartados ficam fora do total e do valor: o dinheiro de um boleto
+      // descartado não existe, e somá-lo faria os cartões mentirem.
+      const validos = linhas.filter((b) => b.status !== 'descartado');
       return {
-        total_boletos: linhas.length,
-        valor_total: linhas.reduce((t, b) => t + Number(b.valor), 0),
+        total_boletos: validos.length,
+        valor_total: validos.reduce((t, b) => t + Number(b.valor ?? 0), 0),
         pendentes: linhas.filter((b) => b.status === 'pendente').length,
         associados: linhas.filter((b) => b.status === 'associado').length,
         recusados: linhas.filter((b) => b.status === 'recusado').length,
+        descartados: linhas.filter((b) => b.status === 'descartado').length,
       };
     },
 
     async criarBoleto(registro, arquivo, aoProgredir) {
+      // Simula o gatilho trg_carimbar_solicitante (db/13): o que o navegador
+      // manda nos campos de identidade é DESCARTADO e substituído pelo perfil
+      // autenticado. Se a demonstração aceitasse, ela mentiria sobre a
+      // segurança do portal de verdade.
+      {
+        const sessaoAgora = montarSessao(await estado());
+        const perfilAgora = sessaoAgora.perfil;
+        if (!perfilAgora) throw erro('Entre no portal antes de enviar.', 'sem_perfil');
+
+        const informado = registro.solicitante_email;
+        if (informado && informado.toLowerCase() !== perfilAgora.email.toLowerCase()) {
+          registro.solicitante_informado =
+            `informou ${informado}, mas está logado como ${perfilAgora.email}`;
+        }
+        registro.solicitante_email = perfilAgora.email;
+        registro.solicitante_nome = perfilAgora.nome;
+        registro.solicitante_sobrenome = perfilAgora.sobrenome;
+      }
+
       const s = await estado();
       const sessao = montarSessao(s);
       if (!sessao.usuario) throw erro('Você precisa estar logado.', 'sessao');
@@ -663,6 +703,63 @@ export function criarDriverDemo() {
       const s = await estado();
       if (!boleto.arquivo_caminho) return null;
       return s.arquivos[boleto.arquivo_caminho] ?? null;
+    },
+
+    async descartarBoleto(id, motivo) {
+      const s = await estado();
+      const sessao = montarSessao(s);
+      if (!sessao.perfil?.pode_descartar) {
+        throw erro('Você não tem permissão para descartar boletos.', 'permissao_descarte');
+      }
+      if (!motivo || motivo.trim().length < 5) {
+        throw erro('Escreva por que este boleto está sendo descartado.', 'motivo');
+      }
+
+      const b = s.boletos.find((x) => x.id === id);
+      if (!b) throw erro('Boleto não encontrado.', 'nao_encontrado');
+      if (b.status === 'associado') {
+        throw erro('Este boleto está associado. Desfaça a associação antes de descartar.', 'associado');
+      }
+      if (b.status === 'descartado') throw erro('Este boleto já foi descartado.', 'ja_descartado');
+
+      b.status = 'descartado';
+      b.data_associacao = null;
+      b.associado_por = null;
+      b.associado_por_nome = null;
+      b.observacoes_operador = motivo.trim();
+      b.visto_pelo_solicitante_em = null;
+
+      s.eventos.push({
+        id: uuid(), boleto_id: id, tipo: 'descartado',
+        observacao: motivo.trim(), usuario_email: sessao.perfil.email, criado_em: agora(),
+      });
+      gravar(s);
+      avisar();
+      return enfeitar(b);
+    },
+
+    async restaurarBoleto(id, observacao = null) {
+      const s = await estado();
+      const sessao = montarSessao(s);
+      if (!sessao.perfil?.pode_descartar) {
+        throw erro('Só quem pode descartar pode restaurar.', 'permissao_descarte');
+      }
+
+      const b = s.boletos.find((x) => x.id === id);
+      if (!b) throw erro('Boleto não encontrado.', 'nao_encontrado');
+      if (b.status !== 'descartado') throw erro('Este boleto não está descartado.', 'nao_descartado');
+
+      b.status = 'pendente';
+      b.observacoes_operador = observacao ?? 'descarte desfeito';
+      b.visto_pelo_solicitante_em = null;
+
+      s.eventos.push({
+        id: uuid(), boleto_id: id, tipo: 'restaurado',
+        observacao: b.observacoes_operador, usuario_email: sessao.perfil.email, criado_em: agora(),
+      });
+      gravar(s);
+      avisar();
+      return enfeitar(b);
     },
 
     async completarBoleto(id, dados = {}) {
