@@ -75,6 +75,13 @@ const TRADUCOES = [
   [/JA_ASSOCIADO/, 'Este boleto já foi associado.'],
   [/INCOMPLETO:\s*(.+)/, 'Antes de associar, preencha: $1'],
   [/EMPRESA_OBRIGATORIA/, 'Escolha a empresa junto com a conta bancária.'],
+  [/SEM_PERMISSAO_DESCARTE/, 'Você não tem permissão para descartar boletos.'],
+  [/SEM_DEPARTAMENTO/, 'Informe o seu departamento antes de enviar boletos.'],
+  [/DEPARTAMENTO_CURTO/, 'Escreva o nome do seu departamento.'],
+  [/DEPARTAMENTO_LONGO/, 'O nome do departamento é longo demais (máximo 60 caracteres).'],
+  [/ASSOCIADO_PRIMEIRO/, 'Este boleto está associado. Desfaça a associação antes de descartar.'],
+  [/JA_DESCARTADO/, 'Este boleto já foi descartado.'],
+  [/NAO_ESTA_DESCARTADO/, 'Este boleto não está descartado.'],
   [/MOTIVO_OBRIGATORIO/, 'Escreva o motivo. Quem enviou o boleto vai ler isso.'],
   [
     /duplicate key.*codbarras/i,
@@ -120,7 +127,7 @@ export function criarDriverSupabase() {
     const sb = await obterCliente();
     const { data: perfil } = await sb
       .from('profiles')
-      .select('id, email, nome, sobrenome, nome_completo, papel, escopo, e_terceirizado')
+      .select('id, email, nome, sobrenome, nome_completo, papel, escopo, e_terceirizado, pode_descartar, departamento')
       .eq('id', sessaoSupabase.user.id)
       .maybeSingle();
 
@@ -332,7 +339,7 @@ export function criarDriverSupabase() {
       return { email: s.usuario.email, nome: s.perfil?.nome, sobrenome: s.perfil?.sobrenome };
     },
 
-    async concluirPrimeiroAcesso({ senha, nome, sobrenome }) {
+    async concluirPrimeiroAcesso({ senha, nome, sobrenome, departamento }) {
       try {
         const sb = await obterCliente();
         const atributos = { password: senha };
@@ -343,10 +350,18 @@ export function criarDriverSupabase() {
 
         // Guardamos o nome também no perfil, que é o que as telas leem.
         const s = await this.sessaoAtual();
-        if (s.usuario && (nome || sobrenome)) {
+        if (s.usuario && (nome || sobrenome || departamento)) {
           await sb
             .from('profiles')
-            .update({ nome: nome ?? '', sobrenome: sobrenome ?? '' })
+            .update({
+              nome: nome ?? '',
+              sobrenome: sobrenome ?? '',
+              // O departamento entra aqui e não muda mais sozinho: a partir de
+              // agora ele vai carimbado em todo boleto que a pessoa enviar.
+              ...(departamento
+                ? { departamento: String(departamento).trim().replace(/\s+/g, ' ') }
+                : {}),
+            })
             .eq('id', s.usuario.id);
         }
         return await this.sessaoAtual();
@@ -454,15 +469,26 @@ export function criarDriverSupabase() {
       porPagina = CONFIG.LINHAS_POR_PAGINA,
       ordenarPor = 'data_envio',
       ordem = 'desc',
+      nulosPrimeiro = null,
     } = {}) {
       try {
         const sb = await obterCliente();
         const de = (pagina - 1) * porPagina;
 
+        // Onde ficam as linhas sem valor na coluna ordenada.
+        //
+        // O padrão do Postgres, ordenando crescente, joga nulo para o fim.
+        // Isso está errado para vencimento: um boleto cujo vencimento não foi
+        // lido é MAIS urgente que um que vence em trinta dias, porque pode
+        // vencer amanhã e ninguém sabe. Empurrá-lo para a última página é
+        // exatamente o jeito de esquecê-lo.
+        const nulos =
+          nulosPrimeiro ?? (ordenarPor === 'vencimento' && ordem === 'asc');
+
         let consulta = sb
           .from('vw_boletos_operador')
           .select('*', { count: 'exact' })
-          .order(ordenarPor, { ascending: ordem === 'asc' })
+          .order(ordenarPor, { ascending: ordem === 'asc', nullsFirst: nulos })
           .range(de, de + porPagina - 1);
 
         if (escopo === 'meus') {
@@ -510,6 +536,7 @@ export function criarDriverSupabase() {
           pendentes: Number(linha?.pendentes ?? 0),
           associados: Number(linha?.associados ?? 0),
           recusados: Number(linha?.recusados ?? 0),
+          descartados: Number(linha?.descartados ?? 0),
         };
       } catch (erro) {
         lancar(erro);
@@ -616,6 +643,26 @@ export function criarDriverSupabase() {
      * O operador preenche o que faltava. Só mexe no que vier diferente de
      * nulo, então dá para completar aos poucos.
      */
+    async descartarBoleto(id, motivo) {
+      const sb = await obterCliente();
+      const { data, error } = await sb.rpc('descartar_boleto', {
+        p_boleto_id: id,
+        p_motivo: motivo,
+      });
+      if (error) lancar(error);
+      return data;
+    },
+
+    async restaurarBoleto(id, observacao = null) {
+      const sb = await obterCliente();
+      const { data, error } = await sb.rpc('restaurar_boleto', {
+        p_boleto_id: id,
+        p_observacao: observacao,
+      });
+      if (error) lancar(error);
+      return data;
+    },
+
     async completarBoleto(id, dados = {}) {
       const sb = await obterCliente();
       const { data, error } = await sb.rpc('completar_boleto', {
@@ -636,6 +683,29 @@ export function criarDriverSupabase() {
     },
 
     /** O solicitante viu as novidades: apaga o marcador. */
+    /** Guarda o departamento no perfil. Uma vez por pessoa. */
+    async definirMeuDepartamento(departamento) {
+      const sb = await obterCliente();
+      const { data, error } = await sb.rpc('definir_meu_departamento', {
+        p_departamento: departamento,
+      });
+      if (error) lancar(error);
+      return data;
+    },
+
+    /** Departamentos já cadastrados ou já usados, para sugerir enquanto digita. */
+    async departamentosSugeridos() {
+      try {
+        const sb = await obterCliente();
+        const { data, error } = await sb.rpc('departamentos_sugeridos');
+        if (error) throw error;
+        return (data ?? []).map((d) => d.nome);
+      } catch (erro) {
+        console.warn('Sugestões de departamento indisponíveis:', erro);
+        return [];
+      }
+    },
+
     async marcarComoVistos() {
       try {
         const sb = await obterCliente();

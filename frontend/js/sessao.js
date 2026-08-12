@@ -85,6 +85,25 @@ export function ehOperador() {
  * A tela usa isto só para mostrar ou esconder o botão — quem realmente barra é
  * a função descartar_boleto (db/11), que checa a mesma permissão no servidor.
  */
+/**
+ * Relê o perfil do banco e atualiza a sessão em memória.
+ *
+ * Necessário depois de gravar algo no próprio perfil — o departamento, por
+ * exemplo. Sem isto a tela continuaria mostrando o estado antigo até a pessoa
+ * recarregar a página, e ela pensaria que não salvou.
+ */
+export async function recarregarPerfil() {
+  const { dados } = await import('./dados.js');
+  const nova = await dados.sessaoAtual();
+  sessao = nova;
+  return nova;
+}
+
+/** O departamento de quem está logado. Nulo se ainda não informou. */
+export function meuDepartamento() {
+  return sessao?.perfil?.departamento ?? null;
+}
+
 export function podeDescartar() {
   return Boolean(sessao?.perfil?.pode_descartar);
 }
