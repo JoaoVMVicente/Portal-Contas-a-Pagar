@@ -91,9 +91,18 @@ export function acharDocumentosNoTexto(texto) {
   const suspeitos = [];
   const jaVistos = new Set();
 
-  // CNPJ com ou sem pontuação. Aceitamos separadores frouxos porque o PDF às
-  // vezes entrega "12.345.678 / 0001-90" com espaços no meio.
-  const padraoCnpj = /(\d{2})[.\s]?(\d{3})[.\s]?(\d{3})[/\s]?(\d{4})[-\s]?(\d{2})/g;
+  // CNPJ com ou sem pontuação, e com a pontuação que o OCR inventa.
+  //
+  // O PDF às vezes entrega "12.345.678 / 0001-90" com espaços no meio. E boleto
+  // que é imagem passa pelo OCR, que erra pontuação com frequência:
+  //
+  //     043:474.883/0001 -84     dois-pontos no lugar do ponto
+  //     021,543,994/0002-43      vírgulas
+  //
+  // Sem aceitar esses, dois CNPJs perfeitamente legíveis eram ignorados. Não há
+  // risco em ser tolerante aqui: o dígito verificador continua sendo a trava.
+  const padraoCnpj =
+    /(\d{2})[.,:\s]?(\d{3})[.,:\s]?(\d{3})\s?[/\s]?\s?(\d{4})\s?[-\s]?(\d{2})/g;
   let m;
   while ((m = padraoCnpj.exec(t)) !== null) {
     const digitos = m.slice(1).join('');
@@ -127,7 +136,8 @@ export function acharDocumentosNoTexto(texto) {
   }
 
   // CPF: fornecedor pessoa física existe, ainda que raro.
-  const padraoCpf = /(?<![\d./-])(\d{3})[.\s]?(\d{3})[.\s]?(\d{3})[-\s]?(\d{2})(?![\d./-])/g;
+  const padraoCpf =
+    /(?<![\d./-])(\d{3})[.,:\s]?(\d{3})[.,:\s]?(\d{3})\s?[-\s]?(\d{2})(?![\d./-])/g;
   while ((m = padraoCpf.exec(t)) !== null) {
     const digitos = m.slice(1).join('');
     if (!cpfValido(digitos) || jaVistos.has(digitos)) continue;
@@ -220,6 +230,21 @@ function linhaAcima(texto, posicao) {
 const ROTULOS_DE_BENEFICIARIO = [
   'BENEFICIARIO', 'CEDENTE', 'FAVORECIDO', 'CREDOR', 'EMITENTE', 'SACADOR',
 ];
+
+/**
+ * Como o OCR escreve "CNPJ" quando erra.
+ *
+ * O J é a letra que ele mais confunde: a perna descendente parece I, U e até ].
+ * Vistos em boletos reais: CNPI, CNPU, CPFICNPU, CNP]. Também CGF e INSC, que
+ * aparecem colados no nome em faturas de energia.
+ *
+ * Sem isto, o fornecedor saía "ENTRE EIXOS CPF/CNPI" — com o rótulo grudado,
+ * porque a limpeza procurava a palavra "CNPJ" exata.
+ */
+// Lista fechada, não prefixo. A primeira versão era /^(CPF|CNP|CGF|INSC|EST)/
+// e comeu "ESTADO" de "COMPANHIA DE ELETRICIDADE DO ESTADO DA BAHIA". Prefixo
+// solto também engoliria "CPFL Energia", que é fornecedor de verdade.
+const RE_ROTULO_DOCUMENTO = /^(CNP[JIU\]]?|CPF|CPF[CI]?CNP[JIU\]]?|CGF|INSC)$/;
 
 const ROTULOS_DE_PAGADOR = [
   'PAGADOR', 'SACADO', 'DEVEDOR', 'TOMADOR',
@@ -561,8 +586,14 @@ const SUFIXOS_EMPRESA =
 export function acharRazaoSocialFornecedor(texto, documentoFornecedor = null) {
   // Estratégia 1: o texto imediatamente antes do CNPJ, na mesma linha.
   if (documentoFornecedor?.textoAntes) {
-    const nome = limparNome(documentoFornecedor.textoAntes);
-    if (nome.length >= 4) {
+    const nome = limparNome(cortarNoEndereco(documentoFornecedor.textoAntes));
+
+    // Nome de uma palavra curta quase nunca é razão social — costuma ser
+    // pedaço de logotipo ou de rótulo. Numa fatura da Enel, o texto antes do
+    // CNPJ era só "BRASIL" (do logotipo "enel BRASIL"), enquanto o fornecedor
+    // de verdade, AMPLA Energia e Serviços SA, estava sob o rótulo
+    // "Beneficiário" algumas linhas abaixo. Nesses casos vale tentar o rótulo.
+    if (nomeParecePlausivel(nome)) {
       return { nome, confianca: 'media', origem: 'antes-do-cnpj' };
     }
   }
@@ -582,13 +613,13 @@ export function acharRazaoSocialFornecedor(texto, documentoFornecedor = null) {
 
     // Primeiro tenta o resto da própria linha, depois a linha seguinte.
     const posicao = normal.search(/BENEFICIARIO|CEDENTE|FAVORECIDO|CREDOR|EMITENTE/);
-    const restoDaLinha = limparNome(linhas[i].slice(posicao).replace(/^\S+/, ''));
+    const restoDaLinha = limparNome(cortarNoEndereco(linhas[i].slice(posicao).replace(/^\S+/, '')));
     if (restoDaLinha.length >= 6 && SUFIXOS_EMPRESA.test(semAcento(restoDaLinha))) {
       return { nome: restoDaLinha, confianca: 'media', origem: 'rotulo-mesma-linha' };
     }
 
-    const abaixo = limparNome(linhas[i + 1] ?? '');
-    if (abaixo.length >= 4) {
+    const abaixo = limparNome(cortarNoEndereco(linhas[i + 1] ?? ''));
+    if (nomeParecePlausivel(abaixo)) {
       return { nome: abaixo, confianca: 'media', origem: 'rotulo-linha-de-baixo' };
     }
   }
@@ -603,6 +634,43 @@ export function acharRazaoSocialFornecedor(texto, documentoFornecedor = null) {
   }
 
   return { nome: null, confianca: 'baixa', origem: 'nao-encontrado' };
+}
+
+/**
+ * Um nome de fornecedor precisa ter cara de razão social.
+ *
+ * Duas palavras, ou uma palavra longa com sufixo de empresa. "BRASIL" sozinho
+ * não passa; "GALLOTTI TRUCKS" passa; "PETROBRAS" passa pelo tamanho.
+ */
+function nomeParecePlausivel(nome) {
+  if (!nome || nome.length < 4) return false;
+  const palavras = nome.split(/\s+/).filter(Boolean);
+  if (palavras.length >= 2) return true;
+  return nome.length >= 10 || SUFIXOS_EMPRESA.test(semAcento(nome));
+}
+
+/**
+ * Corta o nome onde começa o endereço.
+ *
+ * Boleto costuma escrever tudo numa linha, separando com " - " ou " | ":
+ *
+ *   AMPLA Energia e Serviços SA - Av. Oscar Niemeyer,2000 - 20220-297
+ *   ENTRE EIXOS | DICA ANEL III, 942 - QD 7
+ *
+ * Sem cortar, o endereço inteiro entrava no campo do fornecedor.
+ */
+function cortarNoEndereco(nome) {
+  const texto = String(nome ?? '').trim();
+  const partes = texto.split(/\s+[-|]\s+/);
+  if (partes.length < 2) return texto;
+
+  // Cortar cegamente no primeiro " - " estraga nome que TEM hífen:
+  // "OHT - OPTUM HEALTH TECHNOLOGY" ficava só "OHT". Então só cortamos quando
+  // o pedaço da esquerda já tem cara de razão social por si — duas palavras, ou
+  // uma longa com sufixo de empresa. "OHT" não passa; "AMPLA Energia e
+  // Serviços SA" passa.
+  const esquerda = partes[0].replace(/[,;.\s]+$/, '').trim();
+  return nomeParecePlausivel(esquerda) ? esquerda : texto.replace(/[,;.\s]+$/, '').trim();
 }
 
 /**
@@ -640,8 +708,10 @@ function limparNome(texto) {
     .replace(/\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b/g, ' ')
     .replace(/\b\d{1,2}[/.-]\d{1,2}[/.-]?/g, ' ')
     // documentos
-    .replace(/\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}/g, ' ')
-    .replace(/\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}/g, ' ')
+    // \d{2,3} no primeiro grupo porque o Bradesco imprime com zero à esquerda:
+    // "043.474.883/0001-84". Sem isso o zero sobrava grudado no nome.
+    .replace(/\d{2,3}[.,:\s]?\d{3}[.,:\s]?\d{3}\s?[/\s]?\s?\d{4}\s?[-\s]?\d{2}/g, ' ')
+    .replace(/\d{3}[.,:\s]?\d{3}[.,:\s]?\d{3}\s?[-\s]?\d{2}/g, ' ')
     // CEP
     .replace(/\bCEP[:\s]*\d{5}-?\d{3}\b/gi, ' ')
     // números longos (nosso número, código de barras, agência/conta)
@@ -654,6 +724,8 @@ function limparNome(texto) {
     .filter((palavra) => {
       const chave = semAcento(palavra).replace(/[^A-Z0-9]/g, '');
       if (!chave) return false;
+      // Variantes de "CNPJ" que o OCR produz.
+      if (RE_ROTULO_DOCUMENTO.test(chave)) return false;
       // Sobra de número já cortado: "4073/12491-1" vira "/-1" quando os
       // números longos saem. Esse resto é lixo.
       //

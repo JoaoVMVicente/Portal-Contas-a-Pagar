@@ -302,13 +302,45 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
   }
 
   // ------------------------------------------------------------ NÍVEL 3 (OCR)
-  // O OCR agora é o QUARTO recurso, não o terceiro: se o código de barras foi
-  // decodificado do desenho, não há o que ele possa melhorar.
+  /* ---------------------------------------------------------------------- *
+   * Quando o OCR precisa rodar
+   * ---------------------------------------------------------------------- *
+   * A versão anterior pulava o OCR sempre que o código de barras havia sido
+   * decodificado do desenho. Parecia economia — e era um erro que custou os
+   * campos mais difíceis.
+   *
+   * Boleto que é imagem tem código de barras perfeitamente legível pelo leitor
+   * gráfico, então valor e vencimento saíam certos. Mas NÃO tem texto: nome da
+   * empresa, nome do fornecedor e CNPJs ficavam vazios, e o OCR — o único
+   * caminho para eles — nunca era chamado.
+   *
+   * Medindo em onze boletos reais: os três que falharam eram exatamente esses,
+   * PDF sem camada de texto e com o código de barras lido. Rodando o OCR neles,
+   * os nove campos que faltavam foram recuperados.
+   *
+   * A regra certa não é "o código de barras deu certo?", é "tenho texto
+   * suficiente para garimpar os nomes?". Um boleto com camada de texto de
+   * verdade tem alguns milhares de caracteres; os três que falharam tinham 76,
+   * 139 e 395 — só cabeçalho de impressão.
+   */
+  const TEXTO_MINIMO = 600;
+
+  // Não dá para consultar o garimpo aqui: ele roda depois. Mas não precisa —
+  // dois sinais bastam e são baratos. Texto curto não tem nome de empresa
+  // dentro. E texto sem nenhum CNPJ não tem CNPJ para achar.
+  const textoLimpo = texto.trim();
+  const temAlgumCnpj = /\d{2}[.,:\s]?\d{3}[.,:\s]?\d{3}\s?[/\s]?\s?\d{4}/.test(textoLimpo);
+  const textoInsuficiente = textoLimpo.length < TEXTO_MINIMO || !temAlgumCnpj;
+
   const precisaOcr =
     CONFIG.USAR_OCR &&
-    !doGrafico?.codigoBarras &&
-    (!doCodigo?.codigoBarras || doCodigo.confianca === 'baixa') &&
-    (!ehPdf || !texto.trim() || !doCodigo?.valor);
+    (
+      // Nada de código de barras: o OCR pode ser o único caminho para tudo.
+      (!doGrafico?.codigoBarras &&
+        (!doCodigo?.codigoBarras || doCodigo.confianca === 'baixa')) ||
+      // Ou: temos o código de barras, mas não temos texto para os nomes.
+      textoInsuficiente
+    );
 
   if (precisaOcr) {
     try {

@@ -322,6 +322,59 @@ for (const caso of REAIS) {
   });
 }
 
+/* ========================================================================== *
+ * OS TRÊS BOLETOS-IMAGEM, sobre o texto do OCR
+ * ========================================================================== */
+grupo('Boletos-imagem — o garimpo sobre texto de OCR, com os defeitos dele');
+
+const IMAGENS = [
+  {
+    nome: 'Bradesco / Entre Eixos — CNPJ com dois-pontos e zero à esquerda',
+    texto: R.OCR_BRADESCO_ENTRE_EIXOS,
+    fornecedor: 'ENTRE EIXOS',
+    fornecedorCnpj: '43474883000184',
+    // o pagador vem como 021,543,994/0002-43 (vírgulas)
+    empresaEsperada: '21543994000243',
+  },
+  {
+    nome: 'Santander / Gallotti Trucks — o "I" do nome virou barra vertical',
+    texto: R.OCR_SANTANDER_GALLOTTI,
+    fornecedor: 'GALLOTTI TRUCKS COMERCIO DE AUTOMOTORES LTDA.,',
+    fornecedorCnpj: '32206016000141',
+    empresaEsperada: '38297095000200',
+  },
+  {
+    nome: 'Enel / Gargau — logotipo antes do CNPJ e endereço na mesma linha',
+    texto: R.OCR_ENEL_GARGAU,
+    fornecedor: 'AMPLA Energia e Serviços SA',
+    fornecedorCnpj: '33050071000158',
+    empresaEsperada: '09149503000440',
+  },
+];
+
+for (const caso of IMAGENS) {
+  const r = campos.extrairCamposDoTexto(caso.texto, { ehNossaEmpresa });
+
+  teste(`${caso.nome} — nossa empresa`, () => {
+    igual(r.unidadeCnpj, caso.empresaEsperada, 'CNPJ da unidade');
+  });
+
+  teste(`${caso.nome} — fornecedor`, () => {
+    igual(r.fornecedorRazaoSocial, caso.fornecedor, 'razão social do fornecedor');
+  });
+
+  teste(`${caso.nome} — CNPJ do fornecedor`, () => {
+    igual(r.fornecedorCnpj, caso.fornecedorCnpj, 'CNPJ do fornecedor');
+  });
+
+  teste(`${caso.nome} — o nome não carrega rótulo nem endereço`, () => {
+    const nome = r.fornecedorRazaoSocial ?? '';
+    if (/CNP[JIU\]]|CPF|Av\.|RUA |CEP/i.test(nome)) {
+      throw new Error(`sobrou rótulo ou endereço no nome: ${nome}`);
+    }
+  });
+}
+
 /* ========================================================================== */
 console.log('');
 console.log(
