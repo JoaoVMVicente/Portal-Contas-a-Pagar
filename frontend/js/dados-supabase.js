@@ -465,7 +465,6 @@ export function criarDriverSupabase() {
       status = 'todos',
       tipo = null,
       busca = '',
-      cc = '',
       pagina = 1,
       porPagina = CONFIG.LINHAS_POR_PAGINA,
       ordenarPor = 'data_envio',
@@ -502,8 +501,6 @@ export function criarDriverSupabase() {
         }
         if (tipo) consulta = consulta.eq('tipo_documento', tipo);
         if (status !== 'todos') consulta = consulta.eq('status', status);
-        if (cc) consulta = consulta.eq('cc', cc);
-
         if (busca) {
           const t = String(busca).replace(/[%,]/g, '');
           consulta = consulta.or(
@@ -515,7 +512,6 @@ export function criarDriverSupabase() {
               `unidade_cnpj.ilike.%${t}%`,
               `fornecedor_cnpj.ilike.%${t}%`,
               `numero_documento.ilike.%${t}%`,
-              `cc.ilike.%${t}%`,
               `codigo_barras.ilike.%${t}%`,
             ].join(',')
           );

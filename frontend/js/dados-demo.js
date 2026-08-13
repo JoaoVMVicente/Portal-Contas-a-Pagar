@@ -121,16 +121,12 @@ export function criarDriverDemo() {
     const escolher = (i) => {
       const e = empresas[i % Math.max(empresas.length, 1)];
       if (!e) {
-        return { unidade_negocio: 'Empresa de exemplo', unidade_cnpj: '00000000000000', cc: '0000-0' };
+        return { unidade_negocio: 'Empresa de exemplo', unidade_cnpj: '00000000000000' };
       }
       const conta = e.contas.find((c) => c.ativa) ?? e.contas[0];
       return {
         unidade_negocio: e.razaoSocial,
         unidade_cnpj: e.documento,
-        cc: conta.conta,
-        conta_banco: conta.banco,
-        conta_agencia: conta.agencia,
-        conta_tipo: conta.tipoConta,
       };
     };
 
@@ -449,7 +445,6 @@ export function criarDriverDemo() {
       status = 'todos',
       tipo = null,
       busca = '',
-      cc = '',
       pagina = 1,
       porPagina = CONFIG.LINHAS_POR_PAGINA,
       ordenarPor = 'data_envio',
@@ -476,7 +471,6 @@ export function criarDriverDemo() {
 
       if (tipo) linhas = linhas.filter((b) => b.tipo_documento === tipo);
       if (status !== 'todos') linhas = linhas.filter((b) => b.status === status);
-      if (cc) linhas = linhas.filter((b) => b.cc === cc);
 
       if (busca) {
         const t = busca.toLowerCase();
@@ -484,7 +478,7 @@ export function criarDriverDemo() {
           [
             b.solicitante_nome, b.solicitante_sobrenome, b.solicitante_email,
             b.fornecedor_razao_social, b.fornecedor_cnpj, b.unidade_negocio,
-            b.unidade_cnpj, b.numero_documento, b.cc, b.codigo_barras,
+            b.unidade_cnpj, b.numero_documento, b.codigo_barras,
           ]
             .filter(Boolean)
             .some((v) => String(v).toLowerCase().includes(t))

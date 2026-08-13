@@ -845,9 +845,6 @@ function montarRegistro(item, { prioridade, motivo }) {
     numero_documento: String(item.numero ?? '').trim() || null,
     documento_regularizado: false, // quem confirma isso é a operação
 
-    // A conta fica em branco: com 69% das empresas tendo mais de uma, não há
-    // como adivinhar, e escolher é decisão da operação.
-    cc: null,
     unidade_negocio: empresa?.razaoSocial ?? null,
     unidade_cnpj: empresa?.documento ?? null,
 
