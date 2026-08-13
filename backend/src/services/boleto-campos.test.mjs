@@ -375,6 +375,33 @@ for (const caso of IMAGENS) {
   });
 }
 
+/* ========================================================================== *
+ * A FATURA SEM VENCIMENTO NO CÓDIGO DE BARRAS
+ * ========================================================================== */
+grupo('Equatorial — fator 0000, duas datas e chave de acesso de 44 dígitos');
+
+{
+  const r = campos.extrairCamposDoTexto(R.ITAU_BB_EQUATORIAL, { ehNossaEmpresa });
+
+  teste('o nome do fornecedor para onde a coluna do PDF acaba', () => {
+    igual(r.fornecedorRazaoSocial, 'EQUATORIAL MARANHÃO DISTRIB. DE ENERGIA S.A', 'razão social');
+  });
+
+  teste('não sobra texto de outra caixa no nome', () => {
+    if (/Para realizar|QR CODE|pagamento,/i.test(r.fornecedorRazaoSocial ?? '')) {
+      throw new Error(`vazou texto de outra coluna: ${r.fornecedorRazaoSocial}`);
+    }
+  });
+
+  teste('CNPJ do fornecedor', () => {
+    igual(r.fornecedorCnpj, '06272793000184', 'CNPJ do fornecedor');
+  });
+
+  teste('nossa empresa, mesmo com o CNPJ do topo mascarado', () => {
+    igual(r.unidadeCnpj, '23598829000214', 'CNPJ da unidade');
+  });
+}
+
 /* ========================================================================== */
 console.log('');
 console.log(

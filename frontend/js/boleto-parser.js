@@ -525,15 +525,105 @@ export function acharValorNoTexto(texto) {
   return validos.length ? Math.max(...validos) : null;
 }
 
+/**
+ * O vencimento escrito no papel, para quando o código de barras não traz.
+ *
+ * QUANDO ISSO ACONTECE
+ * --------------------
+ * O código de barras guarda o vencimento num campo de quatro dígitos chamado
+ * fator. Quando o fator é 0000, a especificação FEBRABAN diz que o boleto NÃO
+ * tem vencimento codificado — e aí não há o que calcular.
+ *
+ * Acontece em fatura de concessionária. Numa da Equatorial Maranhão o código
+ * trazia o valor certo, R$ 101,42, e fator 0000. O vencimento estava só
+ * impresso, na ficha de compensação.
+ *
+ * O CUIDADO COM A SEGUNDA DATA
+ * ----------------------------
+ * Essa mesma fatura tinha DUAS datas:
+ *
+ *   Vencimento 24/03/2026    no cabeçalho da conta
+ *   VENCIMENTO 25/03/2026    na ficha de compensação
+ *
+ * A segunda é a que vale para pagar — é a que o banco vai cobrar. Por isso
+ * procuramos primeiro na parte de baixo do documento, depois da linha
+ * digitável, e só caímos para o resto do texto se não acharmos nada lá.
+ */
 export function acharVencimentoNoTexto(texto) {
-  const txt = String(texto ?? '');
-  const re = /VENCIMENTO[^\d]{0,30}(\d{2})[/\-.](\d{2})[/\-.](\d{2,4})/i;
-  const m = txt.match(re) ?? txt.match(/(\d{2})[/\-.](\d{2})[/\-.](\d{4})/);
-  if (!m) return null;
-  const [, dd, mm, aaaaRaw] = m;
-  const aaaa = aaaaRaw.length === 2 ? `20${aaaaRaw}` : aaaaRaw;
-  const data = new Date(Date.UTC(Number(aaaa), Number(mm) - 1, Number(dd)));
-  return paraISODate(data);
+  const linhas = String(texto ?? '').split('\n');
+
+  // Onde começa a ficha de compensação.
+  //
+  // Só a LINHA DIGITÁVEL serve como marca, nunca uma sequência solta de 44
+  // dígitos: a chave de acesso da nota fiscal eletrônica também tem 44, e numa
+  // fatura da Equatorial ela aparecia bem no topo do documento. Usá-la como
+  // início da ficha fazia a busca começar antes da conta e pegar a data errada
+  // — 24/03 em vez de 25/03, que é a que o banco cobra.
+  const RE_FICHA =
+    /\d{5}[.\s]?\d{5}\s+\d{5}[.\s]?\d{6}\s+\d{5}[.\s]?\d{6}\s+\d\s+\d{14}/;
+  const linhaDaFicha = linhas.findIndex((l) => RE_FICHA.test(l));
+
+  const RE_DATA = /\b(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})\b/;
+
+  const paraData = (m) => {
+    if (!m) return null;
+    const [, dd, mm, aaaaRaw] = m;
+    const dia = Number(dd);
+    const mes = Number(mm);
+    if (dia < 1 || dia > 31 || mes < 1 || mes > 12) return null;
+    const aaaa = aaaaRaw.length === 2 ? `20${aaaaRaw}` : aaaaRaw;
+    return paraISODate(new Date(Date.UTC(Number(aaaa), mes - 1, dia)));
+  };
+
+  /**
+   * Procura por rótulo dentro de uma faixa de linhas.
+   *
+   * O rótulo costuma ficar numa linha e o valor na de baixo — é assim que os
+   * bancos desenham as caixas da ficha. Procurar por distância em caracteres
+   * não funciona: numa fatura da Equatorial havia 45 caracteres entre
+   * "VENCIMENTO" e a data, e uma janela de 40 perdia a data certa.
+   *
+   * "REAVISO DE VENCIMENTO" fica de fora: é uma caixa informativa, quase
+   * sempre vazia, e casar com ela traria a data errada.
+   */
+  const procurarComRotulo = (de, ate) => {
+    for (let i = de; i < ate; i += 1) {
+      const linha = linhas[i];
+      if (!/VENCIMENTO/i.test(linha)) continue;
+      if (/REAVISO/i.test(linha)) continue;
+
+      // Na própria linha, depois do rótulo.
+      const depois = linha.slice(linha.search(/VENCIMENTO/i));
+      const naLinha = paraData(depois.match(RE_DATA));
+      if (naLinha) return naLinha;
+
+      // Ou na linha de baixo.
+      const abaixo = paraData((linhas[i + 1] ?? '').match(RE_DATA));
+      if (abaixo) return abaixo;
+    }
+    return null;
+  };
+
+  // A ficha de compensação primeiro.
+  //
+  // Uma fatura de concessionária costuma ter DUAS datas: a do cabeçalho da
+  // conta e a da ficha. Na Equatorial eram 24/03 e 25/03. A da ficha é a que
+  // o banco vai cobrar, então é ela que vale.
+  if (linhaDaFicha >= 0) {
+    const naFicha = procurarComRotulo(linhaDaFicha, linhas.length);
+    if (naFicha) return naFicha;
+  }
+
+  const emQualquerLugar = procurarComRotulo(0, linhas.length);
+  if (emQualquerLugar) return emQualquerLugar;
+
+  // Último recurso: qualquer data completa no documento. Pouco confiável —
+  // pode ser emissão, processamento ou leitura de medidor.
+  for (const linha of linhas) {
+    const solta = paraData(linha.match(/\b(\d{2})[/\-.](\d{2})[/\-.](\d{4})\b/));
+    if (solta) return solta;
+  }
+  return null;
 }
 
 /* ========================================================================== *

@@ -3,6 +3,7 @@
  * Não precisa de nenhuma biblioteca de teste.
  */
 import p from '../../../frontend/js/boleto-parser.js';
+import * as REAIS from './fixtures-boletos-reais.mjs';
 
 let passou = 0;
 let falhou = 0;
@@ -116,6 +117,31 @@ console.log('\nEntradas inválidas não quebram o parser');
     const r = p.interpretarCodigo(entrada, HOJE);
     ok(`entrada ${JSON.stringify(entrada)} devolve resultado seguro`, r && r.ok === false);
   }
+}
+
+console.log('\nVencimento que não está no código de barras');
+{
+  // Fatura da Equatorial Maranhão. O fator de vencimento é 0000, que pela
+  // especificação FEBRABAN significa "sem data codificada": o valor vem certo,
+  // a data não vem. Ela só existe impressa na ficha de compensação.
+  const r = p.interpretarCodigo('00197000000000101420000003373821681000007017', HOJE);
+  ok('fator 0000 traz o valor', r.valor === 101.42);
+  ok('fator 0000 NÃO traz vencimento', r.vencimento === null);
+  ok(
+    'e avisa que o código não tem data',
+    r.avisos.some((a) => /sem data de vencimento/i.test(a))
+  );
+
+  // O documento tem DUAS datas: 24/03 no cabeçalho da conta e 25/03 na ficha.
+  // A da ficha é a que o banco cobra.
+  //
+  // E a chave de acesso da NF3e, no topo, também tem 44 dígitos — igual a um
+  // código de barras. Usá-la para localizar a ficha fazia a busca começar no
+  // lugar errado e devolver 24/03.
+  ok(
+    'a data da ficha de compensação vence a do cabeçalho',
+    p.acharVencimentoNoTexto(REAIS.ITAU_BB_EQUATORIAL) === '2026-03-25'
+  );
 }
 
 console.log(`\n${passou} passaram, ${falhou} falharam\n`);

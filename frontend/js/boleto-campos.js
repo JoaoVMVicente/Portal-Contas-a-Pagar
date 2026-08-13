@@ -660,7 +660,18 @@ function nomeParecePlausivel(nome) {
  * Sem cortar, o endereço inteiro entrava no campo do fornecedor.
  */
 function cortarNoEndereco(nome) {
-  const texto = String(nome ?? '').trim();
+  // Antes de qualquer coisa: cortar no primeiro número comprido.
+  //
+  // O PDF agrupa por altura, e caixas lado a lado viram uma linha só. Numa
+  // fatura da Equatorial, a linha do beneficiário era:
+  //
+  //   EQUATORIAL MARANHÃO DISTRIB. DE ENERGIA S.A. 2000164328 02/2026 Para realizar o pagamento,
+  //   └────────────── o nome ────────────────────┘ └instalação┘ └ref─┘ └── texto do PIX, outra caixa ──┘
+  //
+  // Razão social não tem número de quatro dígitos ou mais no meio. Onde ele
+  // aparece, o campo acabou e outra coluna começou.
+  const antesDoNumero = String(nome ?? '').split(/\s\d{4,}/)[0];
+  const texto = antesDoNumero.trim();
   const partes = texto.split(/\s+[-|]\s+/);
   if (partes.length < 2) return texto;
 

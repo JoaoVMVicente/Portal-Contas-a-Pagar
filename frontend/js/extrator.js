@@ -462,7 +462,30 @@ export async function extrairDoArquivo(arquivo, aoProgredir, opcoes = {}) {
    * é o número da nota: a chave fiscal é o número OFICIAL do documento, então
    * ela ganha de um palpite de rótulo.
    */
+  /* ---------------------------------------------------------------------- *
+   * Vencimento que o código de barras não traz
+   * ---------------------------------------------------------------------- *
+   * Fator 0000 significa "sem vencimento codificado" — comum em fatura de
+   * concessionária. O valor vem do código, mas a data está só impressa. Sem
+   * este passo, o boleto chegava na operação com o vencimento em branco mesmo
+   * estando escrito no papel.
+   */
+  if (base.valor != null && base.vencimento == null && texto.trim()) {
+    const doPapel = parser.acharVencimentoNoTexto(texto);
+    if (doPapel) {
+      base.vencimento = doPapel;
+      base.vencimentoDoTexto = true;
+    }
+  }
+
   const avisos = [...(base.avisos ?? []), ...(doTexto.avisos ?? [])];
+
+  if (base.vencimentoDoTexto) {
+    avisos.push(
+      'O código de barras deste boleto não carrega vencimento (fator 0000). ' +
+        'Peguei a data impressa na ficha de compensação — confira.'
+    );
+  }
   const doQr = { usados: [] };
 
   if (doGrafico?.fiscal) {
