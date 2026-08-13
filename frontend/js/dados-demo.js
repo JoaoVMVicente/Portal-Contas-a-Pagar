@@ -497,6 +497,11 @@ export function criarDriverDemo() {
       const nulos = nulosPrimeiro ?? (ordenarPor === 'vencimento' && ordem === 'asc');
 
       linhas.sort((a, b) => {
+        // Prioridade primeiro, igual ao driver do Supabase.
+        if (Boolean(a.prioridade) !== Boolean(b.prioridade)) {
+          return a.prioridade ? -1 : 1;
+        }
+
         const va = a[ordenarPor];
         const vb = b[ordenarPor];
 
@@ -801,17 +806,12 @@ export function criarDriverDemo() {
       if (!b) throw erro('Boleto não encontrado.', 'nao_encontrado');
       if (b.status === 'associado') throw erro('Reabra o boleto antes de alterar.', 'ja_associado');
 
-      // Quando a conta vem, buscamos a empresa na planilha, igual ao gatilho.
-      if (dados.conta && dados.empresaDocumento) {
+      // A conta saiu de cena (db/18). A empresa continua sendo validada contra
+      // a planilha: o CNPJ dela é o que amarra o boleto ao grupo.
+      if (dados.empresaDocumento) {
         const { acharEmpresa } = await import('./contas.js');
         const achado = await acharEmpresa(dados.empresaDocumento);
         if (!achado) throw erro('Empresa não encontrada na planilha.', 'empresa');
-        const conta = achado.empresa.contas.find((c) => c.conta === dados.conta && c.ativa);
-        if (!conta) throw erro(`A conta ${dados.conta} não é desta empresa, ou está encerrada.`, 'conta');
-        b.cc = conta.conta;
-        b.conta_banco = conta.banco;
-        b.conta_agencia = conta.agencia;
-        b.conta_tipo = conta.tipoConta;
         b.unidade_cnpj = achado.empresa.documento;
         b.unidade_negocio = achado.empresa.razaoSocial;
       }
@@ -939,7 +939,6 @@ export function criarDriverDemo() {
 function pendenciasDe(b) {
   return [
     !b.numero_documento && 'número do documento',
-    !b.cc && 'conta bancária',
     !b.unidade_cnpj && 'unidade de negócio',
     !b.fornecedor_razao_social && 'fornecedor',
     b.valor == null && 'valor',

@@ -30,8 +30,7 @@ import {
 } from './ui.js';
 import parser from './boleto-parser.js';
 import {
-  buscarEmpresas, acharEmpresa, contasDaEmpresa, empresaPorDocumento,
-  preencherSelectContas, formatarDocumento,
+  buscarEmpresas, acharEmpresa, empresaPorDocumento, formatarDocumento,
 } from './contas.js';
 
 const el = (id) => document.getElementById(id);
@@ -272,7 +271,7 @@ async function carregarTabela({ silencioso = false } = {}) {
     corpo.innerHTML = Array.from({ length: 5 })
       .map(
         () =>
-          `<tr>${Array.from({ length: 14 })
+          `<tr>${Array.from({ length: 13 })
             .map(() => '<td><div class="esqueleto"></div></td>')
             .join('')}</tr>`
       )
@@ -296,7 +295,7 @@ async function carregarTabela({ silencioso = false } = {}) {
     if (!linhas.length) {
       const filtrando = estado.busca || estado.status !== 'todos';
       corpo.innerHTML = `
-        <tr><td colspan="14">
+        <tr><td colspan="13">
           <div class="estado-vazio">
             <div class="estado-vazio__icone" data-icone="documento"></div>
             <h3>${filtrando ? 'Nada encontrado com esses filtros' : `Nenhuma ${estado.tipo === 'NF' ? 'nota fiscal' : 'medição'} na fila`}</h3>
@@ -373,6 +372,20 @@ function celulaDeRevisao(b) {
   return `<span class="sinal-revisao ${s.classe}" title="${escapar(s.titulo)}">${s.icone}${contador}</span>`;
 }
 
+/**
+ * O selo de prioridade.
+ *
+ * Sinalizado por quem enviou, com motivo obrigatório (db/17). O título mostra o
+ * motivo ao passar o mouse — sem isso, o selo diria "urgente" sem dizer por quê,
+ * e o operador teria que abrir os detalhes de cada um.
+ */
+function seloDePrioridade(b) {
+  if (!b.prioridade) return '';
+  return `<span class="selo selo--prioridade" title="${escapar(b.motivo_prioridade ?? 'sem motivo informado')}">
+            Prioridade
+          </span>`;
+}
+
 function montarLinha(b) {
   let seloVencimento = '';
   if (!b.vencimento) {
@@ -419,16 +432,8 @@ function montarLinha(b) {
          <button class="acao-icone" data-acao="recusar" data-id="${b.id}" title="Recusar e devolver">${ICONES.xCirculo}</button>
          ${botaoDescartar}`;
 
-  // A coluna CC mostra a conta e, embaixo, o banco — porque uma empresa tem
-  // várias contas e o número sozinho não diz de qual banco é.
-  const conta = `
-    <div class="celula-duas-linhas" style="min-width:110px;">
-      <span class="celula-duas-linhas__principal">${escapar(b.cc ?? '—')}</span>
-      ${b.conta_banco ? `<span class="celula-duas-linhas__secundaria">${escapar(b.conta_banco)}</span>` : ''}
-    </div>`;
-
   return `
-  <tr data-id="${b.id}">
+  <tr data-id="${b.id}"${b.prioridade ? ' class="linha--prioridade"' : ''}>
     <td>
       <button class="acao-icone" data-acao="baixar" data-id="${b.id}"
               title="Baixar ${escapar(b.arquivo_nome ?? 'boleto')} (${tamanhoArquivo(b.arquivo_tamanho)})">
@@ -440,7 +445,7 @@ function montarLinha(b) {
 
     <td>
       <div class="celula-duas-linhas" style="min-width:96px;">
-        <span class="celula-duas-linhas__principal">${escapar(b.documento_rotulo ?? `${b.tipo_documento}-${b.numero_documento ?? 's/nº'}`)}</span>
+        <span class="celula-duas-linhas__principal">${escapar(b.documento_rotulo ?? `${b.tipo_documento}-${b.numero_documento ?? 's/nº'}`)}${seloDePrioridade(b)}</span>
         ${b.documento_regularizado ? '' : '<span class="celula-duas-linhas__secundaria">não regularizado</span>'}
       </div>
     </td>
@@ -454,7 +459,6 @@ function montarLinha(b) {
       </div>
     </td>
 
-    <td>${conta}</td>
 
     <td>
       <div class="celula-duas-linhas">
@@ -615,7 +619,7 @@ async function associar(boleto) {
     titulo: `Associar o boleto #${boleto.numero_protocolo}?`,
     mensagem:
       `${boleto.fornecedor_razao_social} · ${moeda(boleto.valor)} · vence ${fmtData(boleto.vencimento)}\n` +
-      `${boleto.unidade_negocio} · conta ${boleto.cc}` +
+      `${boleto.unidade_negocio}` +
       (alertas.length ? `\n\nAtenção: ${alertas.join(' ')}` : '') +
       '\n\nSeu nome vai ficar registrado na coluna "Executado por".',
     textoConfirmar: 'Associar',
@@ -723,10 +727,9 @@ async function restaurar(boleto) {
  * O cliente agora só entrega o arquivo. O que o leitor não conseguiu extrair
  * fica em branco, e é aqui que se preenche.
  *
- * A conta bancária é o caso mais importante: 69% das empresas do grupo têm mais
- * de uma conta ativa (a SERENA GERAÇÃO tem 20), então não existe jeito de
- * adivinhar. Escolher é decisão da operação, e é por isso que este formulário
- * existe.
+ * A conta bancária saiu deste formulário (db/18): a equipe deixou de usá-la para
+ * associar boleto. O que sobra é o que o leitor não conseguiu extrair — empresa,
+ * fornecedor, valor, vencimento, número e departamento.
  *
  * O que estiver preenchido vem preenchido. Campos em branco ganham um contorno
  * laranja, para o olho ir direto no que falta.
@@ -766,12 +769,6 @@ async function completar(boleto) {
           ${boleto.unidade_cnpj ? 'Veio do CNPJ lido no boleto: ' + escapar(fmtCnpj(boleto.unidade_cnpj)) : 'O boleto não trouxe um CNPJ do grupo.'}
         </span>
         <div class="resultados-busca oculto" id="c-resultados"></div>
-      </div>
-
-      <div class="campo campo--largo${falta('conta bancária')}">
-        <label class="campo__rotulo" for="c-conta">Conta bancária (CC) <span class="obrigatorio">*</span></label>
-        <select id="c-conta"><option value="">Escolha a empresa primeiro</option></select>
-        <span class="campo__dica" id="c-conta-dica"></span>
       </div>
 
       <div class="campo${falta('número do documento')}">
@@ -837,21 +834,9 @@ async function completar(boleto) {
   const q = (id) => elemento.querySelector(`#${id}`);
   let empresaEscolhida = boleto.unidade_cnpj ?? null;
 
-  async function carregarContasDaEmpresa(documento, contaAtual) {
-    const contas = await contasDaEmpresa(documento);
-    preencherSelectContas(q('c-conta'), contas, contaAtual);
-    q('c-conta-dica').textContent =
-      contas.length === 1
-        ? 'Esta empresa tem uma conta ativa só, e ela já está selecionada.'
-        : `${contas.length} contas ativas. Escolha a que vai pagar este boleto.`;
-  }
-
   if (empresaEscolhida) {
     const emp = await empresaPorDocumento(empresaEscolhida);
-    if (emp) {
-      q('c-empresa').value = emp.razaoSocial;
-      await carregarContasDaEmpresa(empresaEscolhida, boleto.cc);
-    }
+    if (emp) q('c-empresa').value = emp.razaoSocial;
   }
 
   // Busca de empresa, com os romanos normalizados (ver contas.js)
@@ -888,7 +873,6 @@ async function completar(boleto) {
           q('c-empresa').value = emp?.razaoSocial ?? '';
           q('c-empresa-dica').textContent = formatarDocumento(emp);
           lista.classList.add('oculto');
-          await carregarContasDaEmpresa(empresaEscolhida, null);
         });
       });
     }, 220)
@@ -908,7 +892,6 @@ async function completar(boleto) {
     try {
       await comBotaoOcupado(ev.currentTarget, 'Salvando...', () =>
         dados.completarBoleto(boleto.id, {
-          conta: q('c-conta').value || null,
           empresaDocumento: empresaEscolhida,
           numeroDocumento: q('c-numero').value.trim() || null,
           valor: paraNumero(q('c-valor').value),
@@ -940,11 +923,6 @@ async function verDetalhes(boleto) {
 
   const linhaDigitavel =
     boleto.linha_digitavel ?? parser.codigo44ParaLinha47(boleto.codigo_barras ?? '') ?? null;
-
-  const conta = [boleto.cc, boleto.conta_banco, boleto.conta_agencia ? `ag. ${boleto.conta_agencia}` : null, boleto.conta_tipo]
-    .filter(Boolean)
-    .map(escapar)
-    .join(' · ');
 
   const corpo = `
     <div class="lista-detalhes">
@@ -1029,9 +1007,8 @@ async function exportarCsv() {
       ['Data de envio', (b) => fmtData(b.data_envio)],
       ['Nome', (b) => b.nome],
       ['E-mail', (b) => b.solicitante_email],
-      ['CC (conta)', (b) => b.cc],
-      ['Banco da conta', (b) => b.conta_banco],
-      ['Tipo da conta', (b) => b.conta_tipo],
+      ['Prioridade', (b) => (b.prioridade ? 'SIM' : '')],
+      ['Motivo da prioridade', (b) => b.motivo_prioridade],
       ['Unidade de negócio', (b) => b.unidade_negocio],
       ['CNPJ da unidade', (b) => b.unidade_cnpj],
       ['Fornecedor', (b) => b.fornecedor_razao_social],

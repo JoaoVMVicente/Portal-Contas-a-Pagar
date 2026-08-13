@@ -489,6 +489,10 @@ export function criarDriverSupabase() {
         let consulta = sb
           .from('vw_boletos_operador')
           .select('*', { count: 'exact' })
+          // Prioridade primeiro, sempre. Só depois vem a ordenação escolhida.
+          // A equipe pediu assim: boleto marcado como prioritário aparece no
+          // topo da fila, independentemente de vencimento.
+          .order('prioridade', { ascending: false })
           .order(ordenarPor, { ascending: ordem === 'asc', nullsFirst: nulos })
           .range(de, de + porPagina - 1);
 
@@ -668,7 +672,6 @@ export function criarDriverSupabase() {
       const sb = await obterCliente();
       const { data, error } = await sb.rpc('completar_boleto', {
         p_boleto_id: id,
-        p_conta: dados.conta ?? null,
         p_empresa_doc: dados.empresaDocumento ?? null,
         p_numero_documento: dados.numeroDocumento ?? null,
         p_valor: dados.valor ?? null,

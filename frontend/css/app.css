@@ -2642,3 +2642,13 @@ select[aria-invalid='true']:focus {
   color: var(--coral);
   font-weight: 600;
 }
+
+/* ------------------------------- linha de prioridade no operador -------- */
+.tabela tr.linha--prioridade { background: #fff6f4; }
+.tabela tr.linha--prioridade:hover { background: #ffecea; }
+
+.tabela tr.linha--prioridade td:first-child {
+  box-shadow: inset 3px 0 0 var(--coral);
+}
+
+.selo--prioridade { margin-left: 6px; font-size: 9.5px; }
