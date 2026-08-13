@@ -26,7 +26,50 @@
       <div id="aviso-novidades"></div>
 
       <form id="formulario-envio" novalidate>
-        <section class="cartao cartao--envio">
+        <!-- ==================================================================
+             O TIPO VEM ANTES DO ARQUIVO, E VALE PARA O LOTE INTEIRO
+             ==================================================================
+             A versão anterior deixava escolher NF ou MD boleto a boleto. A
+             equipe pediu o contrário: o tipo é do processo, não do arquivo, e
+             misturar num envio só atrapalha a conferência do outro lado.
+             Escolher antes também evita reler os arquivos depois. -->
+        <section class="cartao cartao--tipo">
+          <h2 class="cartao__titulo">
+            Informar o tipo de pagamento <span class="obrigatorio-rotulo">(obrigatório)</span>
+          </h2>
+
+          <div class="aviso aviso--info" style="margin-bottom:16px;">
+            <span data-icone="info"></span>
+            <div>
+              Não é possível anexar boletos de Método Direto (MD) e de Notas
+              Fiscais (NF) no mesmo processo. Os anexos devem ser enviados
+              separadamente.
+            </div>
+          </div>
+
+          <div class="opcoes-tipo" role="radiogroup" aria-label="Tipo de pagamento">
+            <label class="opcao-tipo">
+              <input type="radio" name="tipo" value="NF" />
+              <span class="opcao-tipo__icone" data-icone="documento"></span>
+              <span class="opcao-tipo__texto">
+                <strong>Boleto de notas fiscais</strong>
+                Selecione esta opção para boletos referentes a Notas Fiscais.
+              </span>
+            </label>
+
+            <label class="opcao-tipo">
+              <input type="radio" name="tipo" value="MD" />
+              <span class="opcao-tipo__icone" data-icone="planilha"></span>
+              <span class="opcao-tipo__texto">
+                <strong>Boleto de método direto (MD)</strong>
+                Selecione esta opção para boletos referentes a Método Direto.
+              </span>
+            </label>
+          </div>
+          <span class="campo__erro oculto" id="erro-tipo"></span>
+        </section>
+
+        <section class="cartao cartao--envio" id="cartao-envio">
 
           <!-- ==================== OS ARQUIVOS ==================== -->
           <div class="area-upload" id="area-upload" tabindex="0" role="button"
@@ -69,11 +112,47 @@
               <div class="campo campo--largo" id="bloco-departamento"></div>
 
               <div class="campo campo--largo">
-                <label class="campo__rotulo" for="observacoes">
-                  Algo que a operação precisa saber? <span class="campo__opcional">opcional</span>
+                <span class="campo__rotulo" id="rotulo-prioridade">
+                  Estes boletos devem ser tratados como prioridade?
+                </span>
+                <div class="opcoes-radio opcoes-radio--cartoes" role="radiogroup"
+                     aria-labelledby="rotulo-prioridade">
+                  <label class="opcao-cartao">
+                    <input type="radio" name="prioridade" value="nao" checked />
+                    <span>
+                      <strong>Não</strong>
+                      Seguem o fluxo normal da fila.
+                    </span>
+                  </label>
+                  <label class="opcao-cartao">
+                    <input type="radio" name="prioridade" value="sim" />
+                    <span>
+                      <strong>Sim</strong>
+                      Preciso sinalizar urgência para a operação.
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="campo campo--largo oculto" id="bloco-prioridade">
+                <label class="campo__rotulo" for="motivo-prioridade">
+                  Descreva o motivo da priorização <span class="obrigatorio">*</span>
                 </label>
-                <textarea id="observacoes" rows="2"
-                          placeholder="Ex.: pagar com prioridade, boleto substitui o anterior..."></textarea>
+                <textarea id="motivo-prioridade" rows="3" maxlength="1000"
+                          placeholder="Ex.: fornecedor suspendeu o serviço, multa a partir de amanhã, boleto substitui o anterior..."></textarea>
+                <span class="campo__contador" id="contador-motivo">0/1000</span>
+                <span class="campo__erro oculto" id="erro-motivo-prioridade"></span>
+
+                <label class="campo__rotulo" for="boletos-prioritarios" style="margin-top:16px;">
+                  Selecione os boletos referentes à informação acima
+                  <span class="obrigatorio">*</span>
+                </label>
+                <div id="boletos-prioritarios" class="selecao-boletos"></div>
+                <span class="campo__dica">
+                  Só aparecem os boletos que foram lidos sem erro. Você pode
+                  selecionar mais de um.
+                </span>
+                <span class="campo__erro oculto" id="erro-boletos-prioritarios"></span>
               </div>
             </div>
 

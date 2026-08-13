@@ -561,6 +561,11 @@ export function criarDriverDemo() {
           throw erro('Escolha o seu departamento antes de enviar boletos.', 'sem_departamento');
         }
         registro.departamento = perfilAgora.departamento;
+
+        // Mesma trava do db/17: prioridade sem motivo não entra.
+        if (registro.prioridade && String(registro.motivo_prioridade ?? '').trim().length < 5) {
+          throw erro('Descreva o motivo da priorização.', 'motivo_prioridade');
+        }
       }
 
       // Simula o gatilho trg_carimbar_solicitante (db/13): o que o navegador

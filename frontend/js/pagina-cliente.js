@@ -44,9 +44,17 @@ const MAXIMO = 20;
 // departamento troca uma vez na vida.
 const CHAVE_TIPO = 'serena.tipo-padrao';
 
-// O tipo do último boleto vira o padrão do próximo. Num lote de quinze notas
-// fiscais, a pessoa escolhe uma vez.
-let ultimoTipoEscolhido = localStorage.getItem(CHAVE_TIPO) || 'NF';
+/**
+ * O tipo vale para o LOTE inteiro, e é escolhido antes de anexar.
+ *
+ * A versão anterior deixava escolher boleto a boleto. A equipe pediu o
+ * contrário: o tipo é do processo, não do arquivo. Um envio com sete NF e treze
+ * MD misturados atrapalha a conferência do outro lado, porque cada fila é de
+ * uma equipe diferente.
+ *
+ * Nulo até a pessoa escolher — a área de upload fica bloqueada antes disso.
+ */
+let tipoDoLote = null;
 
 /**
  * Cada arquivo solto vira um item desta lista. O `estado` de cada um conta a
@@ -87,6 +95,10 @@ async function iniciar() {
   escrever('ident-nome', nomeCompleto);
   escrever('ident-email', emailDaConta);
   escrever('ident-inicial', (nomeCompleto[0] ?? '?').toUpperCase());
+
+  // O tipo do último envio volta marcado, mas a pessoa precisa confirmar:
+  // deixar pré-selecionado sem ela olhar é como não perguntar.
+  atualizarTravaDoUpload();
 
   ligarUpload();
   ligarEnvio();
@@ -228,6 +240,10 @@ function ligarUpload() {
   el('botao-limpar').addEventListener('click', () => {
     itens.length = 0;
     el('resultado-envio').innerHTML = '';
+    el('motivo-prioridade').value = '';
+    el('contador-motivo').textContent = '0/1000';
+    document.querySelector('input[name=prioridade][value=nao]').checked = true;
+    el('bloco-prioridade').classList.add('oculto');
     desenharLista();
     desenharResumo();
     avisar('Limpo. Pode começar de novo.', 'info', 2000);
@@ -276,11 +292,11 @@ async function receberArquivos(listaBruta) {
     itens.push({
       id: `item-${Math.random().toString(36).slice(2, 10)}`,
       arquivo,
-      // Tipo e número passam a ser POR BOLETO. O tipo porque um lote pode
-      // misturar NF e MD. O número porque o que está impresso no boleto
-      // frequentemente NÃO é o número da nota — quem sabe é quem envia.
-      tipo: ultimoTipoEscolhido,
+      // O número continua por boleto: o que está impresso frequentemente NÃO é
+      // o número da nota, e quem sabe é quem envia. O tipo saiu daqui — agora
+      // é do lote inteiro.
       numero: '',
+      prioritario: false,
       estado: problema ? 'invalido' : jaEsta ? 'duplicado_no_lote' : 'aguardando',
       motivo: problema ?? (jaEsta ? 'este arquivo já está na lista' : null),
       progresso: null,
@@ -292,6 +308,7 @@ async function receberArquivos(listaBruta) {
 
   desenharLista();
   await lerPendentes();
+  desenharSelecaoDeBoletos();
 }
 
 /* ========================================================================== *
@@ -315,7 +332,7 @@ async function lerPendentes() {
           item.progresso = mensagem;
           atualizarLinha(item);
         },
-        { ehNossaEmpresa, tipoDocumento: item.tipo }
+        { ehNossaEmpresa, tipoDocumento: tipoDoLote }
       );
 
       item.lido = lido;
@@ -419,20 +436,6 @@ function desenharLista() {
     botao.addEventListener('click', () => copiar(botao.dataset.copiar, 'Código copiado.'));
   });
 
-  area.querySelectorAll('[data-tipo]').forEach((seletor) => {
-    seletor.addEventListener('change', () => {
-      const item = itens.find((x) => x.id === seletor.dataset.tipo);
-      if (!item) return;
-      item.tipo = seletor.value;
-      ultimoTipoEscolhido = seletor.value;
-      localStorage.setItem(CHAVE_TIPO, seletor.value);
-      // Só o rótulo do campo ao lado muda ("Nº da nota" / "Nº da medição"),
-      // então redesenhamos o item. Não relemos o arquivo: o tipo influencia
-      // pouco a leitura e reler quinze arquivos por uma troca seria caro.
-      desenharLista();
-    });
-  });
-
   area.querySelectorAll('[data-numero]').forEach((campo) => {
     campo.addEventListener('input', () => {
       const item = itens.find((x) => x.id === campo.dataset.numero);
@@ -522,15 +525,8 @@ function linhaDoItem(item) {
     ${
       podeEnviar(item) || item.estado === 'enviando'
         ? `<div class="lista-boletos__editaveis">
-             <label class="mini-campo">
-               <span>Tipo</span>
-               <select data-tipo="${item.id}" ${enviando ? 'disabled' : ''}>
-                 <option value="NF" ${item.tipo === 'NF' ? 'selected' : ''}>Nota fiscal</option>
-                 <option value="MD" ${item.tipo === 'MD' ? 'selected' : ''}>Medição</option>
-               </select>
-             </label>
              <label class="mini-campo mini-campo--largo">
-               <span>Nº da ${item.tipo === 'MD' ? 'medição' : 'nota fiscal'}</span>
+               <span>Nº da ${tipoDoLote === 'MD' ? 'medição' : 'nota fiscal'}</span>
                <input type="text" data-numero="${item.id}" ${enviando ? 'disabled' : ''}
                       value="${escapar(item.numero ?? '')}"
                       placeholder="${escapar(item.lido?.numeroDocumento ?? 'digite o número')}" />
@@ -587,6 +583,79 @@ function desenharResumo() {
     </div>`;
 }
 
+/**
+ * Bloqueia a área de anexo enquanto o tipo não for escolhido.
+ */
+function atualizarTravaDoUpload() {
+  const cartao = el('cartao-envio');
+  const area = el('area-upload');
+  if (!cartao || !area) return;
+
+  const travado = !tipoDoLote;
+  cartao.classList.toggle('cartao--travado', travado);
+  area.setAttribute('aria-disabled', String(travado));
+  area.style.pointerEvents = travado ? 'none' : '';
+
+  const secundario = area.querySelector('.area-upload__secundario');
+  if (secundario) {
+    secundario.textContent = travado
+      ? 'Escolha primeiro o tipo de pagamento, acima'
+      : `PDF, PNG ou JPG · até ${MAXIMO} arquivos · ${CONFIG.TAMANHO_MAX_ARQUIVO_MB} MB cada`;
+  }
+}
+
+/**
+ * A lista de boletos que a pessoa pode marcar como prioritários.
+ *
+ * Só entram os que foram lidos sem erro. Um arquivo repetido ou inválido não
+ * vai ser enviado, então oferecê-lo aqui seria pedir uma decisão sobre algo que
+ * não vai existir.
+ */
+function desenharSelecaoDeBoletos() {
+  const area = el('boletos-prioritarios');
+  if (!area) return;
+
+  const disponiveis = itens.filter(podeEnviar);
+
+  if (!disponiveis.length) {
+    area.innerHTML =
+      '<p class="campo__dica" style="margin:0;">Anexe os boletos primeiro. ' +
+      'Só os que forem lidos sem erro aparecem aqui.</p>';
+    return;
+  }
+
+  area.innerHTML = disponiveis
+    .map((item) => {
+      const l = item.lido ?? {};
+      const resumo = [
+        item.numero ? `nº ${escapar(item.numero)}` : null,
+        l.fornecedorRazaoSocial ? escapar(l.fornecedorRazaoSocial) : null,
+        l.valor != null ? moeda(l.valor) : null,
+        l.vencimento ? `vence ${fmtData(l.vencimento)}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+
+      return `
+        <label class="selecao-boletos__item">
+          <input type="checkbox" data-prioritario="${item.id}" ${item.prioritario ? 'checked' : ''} />
+          <span>
+            <strong>${escapar(item.arquivo.name)}</strong>
+            <small>${resumo || 'sem dados lidos'}</small>
+          </span>
+        </label>`;
+    })
+    .join('');
+
+  area.querySelectorAll('[data-prioritario]').forEach((caixa) => {
+    caixa.addEventListener('change', () => {
+      const item = itens.find((x) => x.id === caixa.dataset.prioritario);
+      if (item) item.prioritario = caixa.checked;
+      el('erro-boletos-prioritarios').classList.add('oculto');
+    });
+  });
+}
+
 function atualizarBotaoEnviar() {
   const quantos = itens.filter(podeEnviar).length;
   const botao = el('botao-enviar');
@@ -599,6 +668,57 @@ function atualizarBotaoEnviar() {
  * Enviar
  * ========================================================================== */
 function ligarEnvio() {
+  /* ---------------------------------------------------------------------- *
+   * O tipo destrava o upload
+   * ---------------------------------------------------------------------- *
+   * Antes de escolher NF ou MD, a área de anexo fica bloqueada. É mais honesto
+   * que deixar anexar e recusar depois — e evita ler vinte arquivos com o tipo
+   * errado, o que muda o palpite do número do documento.
+   */
+  document.querySelectorAll('input[name=tipo]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      const novo = radio.value;
+
+      // Trocar de tipo com arquivos na lista significa começar de novo: os
+      // dois não convivem no mesmo envio, e reaproveitar a leitura seria
+      // guardar boletos do tipo que a pessoa acabou de dizer que não é.
+      if (tipoDoLote && tipoDoLote !== novo && itens.length) {
+        const ok = window.confirm(
+          `Você tem ${itens.length} arquivo(s) anexado(s) como ` +
+            `${tipoDoLote === 'NF' ? 'nota fiscal' : 'medição'}. ` +
+            'Trocar o tipo remove todos, porque NF e MD não podem ir no mesmo envio. Continuar?'
+        );
+        if (!ok) {
+          // Devolve a marcação para o tipo que estava valendo.
+          document.querySelector(`input[name=tipo][value="${tipoDoLote}"]`).checked = true;
+          return;
+        }
+        itens.length = 0;
+        el('resultado-envio').innerHTML = '';
+      }
+
+      tipoDoLote = novo;
+      localStorage.setItem(CHAVE_TIPO, novo);
+      el('erro-tipo').classList.add('oculto');
+      atualizarTravaDoUpload();
+      desenharLista();
+      desenharResumo();
+    });
+  });
+
+  // Prioridade: o bloco do motivo só aparece quando a resposta é sim.
+  document.querySelectorAll('input[name=prioridade]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      const querPrioridade = radio.value === 'sim' && radio.checked;
+      el('bloco-prioridade').classList.toggle('oculto', !querPrioridade);
+      if (querPrioridade) desenharSelecaoDeBoletos();
+    });
+  });
+
+  el('motivo-prioridade').addEventListener('input', (ev) => {
+    el('contador-motivo').textContent = `${ev.target.value.length}/1000`;
+  });
+
   el('botao-atualizar-meus').addEventListener('click', () => carregarMeusBoletos());
 
   el('formulario-envio').addEventListener('submit', async (evento) => {
@@ -613,8 +733,38 @@ function ligarEnvio() {
       return;
     }
 
+    if (!tipoDoLote) {
+      el('erro-tipo').innerHTML = `${ICONES.alerta}Escolha o tipo de pagamento.`;
+      el('erro-tipo').classList.remove('oculto');
+      document.querySelector('input[name=tipo]')?.focus();
+      return;
+    }
+
     const fila = itens.filter(podeEnviar);
     if (!fila.length) return avisar('Nenhum arquivo pronto para enviar.', 'atencao');
+
+    // Prioridade exige motivo e pelo menos um boleto escolhido. As duas travas
+    // também existem no banco (db/17) — aqui é só para avisar antes.
+    const querPrioridade =
+      document.querySelector('input[name=prioridade]:checked')?.value === 'sim';
+    const motivo = el('motivo-prioridade').value.trim();
+    const marcados = fila.filter((i) => i.prioritario);
+
+    if (querPrioridade) {
+      if (motivo.length < 5) {
+        el('erro-motivo-prioridade').innerHTML =
+          `${ICONES.alerta}Descreva o motivo da priorização.`;
+        el('erro-motivo-prioridade').classList.remove('oculto');
+        el('motivo-prioridade').focus();
+        return;
+      }
+      if (!marcados.length) {
+        el('erro-boletos-prioritarios').innerHTML =
+          `${ICONES.alerta}Selecione ao menos um boleto para a priorização.`;
+        el('erro-boletos-prioritarios').classList.remove('oculto');
+        return;
+      }
+    }
 
     // O número da nota é o único campo que só quem envia sabe: o que está
     // impresso no boleto muitas vezes é outra coisa (número do título, do
@@ -633,7 +783,6 @@ function ligarEnvio() {
     atualizarBotaoEnviar();
     el('progresso-envio').classList.remove('oculto');
 
-    const observacoes = el('observacoes').value.trim() || null;
     const resultados = [];
 
     for (let i = 0; i < fila.length; i += 1) {
@@ -647,7 +796,7 @@ function ligarEnvio() {
 
       try {
         const criado = await dados.criarBoleto(
-          montarRegistro(item, { observacoes }),
+          montarRegistro(item, { prioridade: querPrioridade && item.prioritario, motivo }),
           item.arquivo
         );
         item.estado = 'enviado';
@@ -684,7 +833,7 @@ function ligarEnvio() {
  * O registro que vai para o banco. Campos não lidos vão como null de propósito
  * — o banco aceita (db/10) e a operação completa depois.
  */
-function montarRegistro(item, { observacoes }) {
+function montarRegistro(item, { prioridade, motivo }) {
   const l = item.lido ?? {};
   const empresa = item.empresa?.empresa ?? null;
 
@@ -692,7 +841,7 @@ function montarRegistro(item, { observacoes }) {
     // Nome, sobrenome e e-mail NÃO vão daqui. O banco carimba a partir da conta
     // autenticada (db/13). Mandar seria inútil: seria descartado, e ainda
     // registraria uma divergência de identidade no histórico.
-    tipo_documento: item.tipo,
+    tipo_documento: tipoDoLote,
     numero_documento: String(item.numero ?? '').trim() || null,
     documento_regularizado: false, // quem confirma isso é a operação
 
@@ -716,8 +865,10 @@ function montarRegistro(item, { observacoes }) {
     extracao_metodo: l.metodo ?? 'nenhum',
     extracao_avisos: l.avisos ?? [],
 
-    // Não vai daqui: o banco carimba a partir do perfil (db/14).
-    observacoes_cliente: observacoes,
+    // O departamento não vai daqui: o banco carimba a partir do perfil (db/14).
+    prioridade: Boolean(prioridade),
+    motivo_prioridade: prioridade ? motivo : null,
+    observacoes_cliente: null,
   };
 }
 
