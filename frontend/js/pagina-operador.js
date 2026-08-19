@@ -108,7 +108,7 @@ async function iniciar() {
 function atualizarTitulo() {
   const nome = NOME_DO_TIPO[estado.tipo];
   el('titulo-painel').textContent =
-    estado.tipo === 'NF' ? 'Associação de notas fiscais' : 'Associação de metodo direto';
+    estado.tipo === 'NF' ? 'Associação de notas fiscais' : 'Associação de método direto';
   el('rotulo-total').textContent = estado.tipo === 'NF' ? 'Total de NFs' : 'Total de MDs';
   el('sub-painel').textContent =
     `Fila de ${nome} enviadas pelos solicitantes. Você está como ${sessao.nomeExibicao()}.`;
