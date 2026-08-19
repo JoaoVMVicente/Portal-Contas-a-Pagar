@@ -35,7 +35,7 @@ import {
 
 const el = (id) => document.getElementById(id);
 
-const NOME_DO_TIPO = { NF: 'notas fiscais', MD: 'medições' };
+const NOME_DO_TIPO = { NF: 'notas fiscais', MD: 'metodo direto' };
 
 const estado = {
   tipo: 'NF',
@@ -108,7 +108,7 @@ async function iniciar() {
 function atualizarTitulo() {
   const nome = NOME_DO_TIPO[estado.tipo];
   el('titulo-painel').textContent =
-    estado.tipo === 'NF' ? 'Associação de notas fiscais' : 'Associação de medições';
+    estado.tipo === 'NF' ? 'Associação de notas fiscais' : 'Associação de metodo direto';
   el('rotulo-total').textContent = estado.tipo === 'NF' ? 'Total de NFs' : 'Total de MDs';
   el('sub-painel').textContent =
     `Fila de ${nome} enviadas pelos solicitantes. Você está como ${sessao.nomeExibicao()}.`;
