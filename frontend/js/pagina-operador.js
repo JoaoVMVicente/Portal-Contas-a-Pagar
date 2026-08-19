@@ -35,7 +35,7 @@ import {
 
 const el = (id) => document.getElementById(id);
 
-const NOME_DO_TIPO = { NF: 'notas fiscais', MD: 'metodo direto' };
+const NOME_DO_TIPO = { NF: 'notas fiscais', MD: 'método direto' };
 
 const estado = {
   tipo: 'NF',
