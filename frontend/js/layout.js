@@ -129,7 +129,7 @@ export function montarSeletorDeTipo({ destino, tipoAtivo, aoTrocar }) {
       </button>
       <button role="tab" data-tipo="MD" aria-selected="${tipoAtivo === 'MD'}">
         ${ICONES.planilha}
-        <span>Medições</span>
+        <span>Método Direto</span>
         <span class="seletor-tipo__contador" id="contador-md"></span>
       </button>
     </div>`;

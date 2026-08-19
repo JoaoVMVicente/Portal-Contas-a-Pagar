@@ -133,7 +133,7 @@ export function rotuloDoEscopo() {
   if (!ehOperador()) return 'Solicitante';
   return {
     NF: 'Operação · Notas fiscais',
-    MD: 'Operação · Medições',
+    MD: 'Operação · Método Direto',
     ambos: 'Operação · NF e MD',
   }[escopo()] ?? 'Operação';
 }

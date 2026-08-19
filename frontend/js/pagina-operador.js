@@ -298,7 +298,7 @@ async function carregarTabela({ silencioso = false } = {}) {
         <tr><td colspan="13">
           <div class="estado-vazio">
             <div class="estado-vazio__icone" data-icone="documento"></div>
-            <h3>${filtrando ? 'Nada encontrado com esses filtros' : `Nenhuma ${estado.tipo === 'NF' ? 'nota fiscal' : 'medição'} na fila`}</h3>
+            <h3>${filtrando ? 'Nada encontrado com esses filtros' : `Nenhuma ${estado.tipo === 'NF' ? 'nota fiscal' : 'MD'} na fila`}</h3>
             <p>${
               filtrando
                 ? 'Tente limpar a busca ou trocar a situação.'
@@ -514,7 +514,7 @@ function atualizarRodape(total, pagina, porPagina) {
   const ultima = Math.ceil(total / porPagina) || 1;
   const de = total ? (pagina - 1) * porPagina + 1 : 0;
   const ate = Math.min(pagina * porPagina, total);
-  const nome = estado.tipo === 'NF' ? 'nota(s) fiscal(is)' : 'medição(ões)';
+  const nome = estado.tipo === 'NF' ? 'nota(s) fiscal(is)' : 'método(s) direto';
 
   const semData = estado.linhas.filter((b) => !b.vencimento).length;
 
@@ -524,7 +524,7 @@ function atualizarRodape(total, pagina, porPagina) {
         ? ` <strong>${semData} sem vencimento lido</strong> — aparecem no topo porque
             podem vencer a qualquer momento.`
         : '')
-    : `Nenhuma ${estado.tipo === 'NF' ? 'nota fiscal' : 'medição'} para mostrar.`;
+    : `Nenhuma ${estado.tipo === 'NF' ? 'nota fiscal' : 'MD'} para mostrar.`;
   el('indicador-pagina').textContent = `${pagina} de ${ultima}`;
   el('pagina-anterior').disabled = pagina <= 1;
   el('pagina-proxima').disabled = pagina >= ultima;

@@ -526,7 +526,7 @@ function linhaDoItem(item) {
       podeEnviar(item) || item.estado === 'enviando'
         ? `<div class="lista-boletos__editaveis">
              <label class="mini-campo mini-campo--largo">
-               <span>Nº da ${tipoDoLote === 'MD' ? 'medição' : 'nota fiscal'}</span>
+               <span>Nº da ${tipoDoLote === 'MD' ? 'método direto' : 'nota fiscal'}</span>
                <input type="text" data-numero="${item.id}" ${enviando ? 'disabled' : ''}
                       value="${escapar(item.numero ?? '')}"
                       placeholder="${escapar(item.lido?.numeroDocumento ?? 'digite o número')}" />
@@ -685,7 +685,7 @@ function ligarEnvio() {
       if (tipoDoLote && tipoDoLote !== novo && itens.length) {
         const ok = window.confirm(
           `Você tem ${itens.length} arquivo(s) anexado(s) como ` +
-            `${tipoDoLote === 'NF' ? 'nota fiscal' : 'medição'}. ` +
+            `${tipoDoLote === 'NF' ? 'nota fiscal' : 'método direto'}. ` +
             'Trocar o tipo remove todos, porque NF e MD não podem ir no mesmo envio. Continuar?'
         );
         if (!ok) {
